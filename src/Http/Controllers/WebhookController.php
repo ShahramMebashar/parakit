@@ -1,18 +1,18 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Http\Controllers;
+namespace Froshly\Parakit\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
-use Gutian\Parakit\Events\WebhookReceived;
-use Gutian\Parakit\Events\WebhookVerificationFailed;
-use Gutian\Parakit\Exceptions\DuplicateWebhookException;
-use Gutian\Parakit\Exceptions\InvalidWebhookSignatureException;
-use Gutian\Parakit\Exceptions\UnsupportedGatewayException;
-use Gutian\Parakit\PaymentManager;
-use Gutian\Parakit\Support\WebhookProcessor;
+use Froshly\Parakit\Events\WebhookReceived;
+use Froshly\Parakit\Events\WebhookVerificationFailed;
+use Froshly\Parakit\Exceptions\DuplicateWebhookException;
+use Froshly\Parakit\Exceptions\InvalidWebhookSignatureException;
+use Froshly\Parakit\Exceptions\UnsupportedGatewayException;
+use Froshly\Parakit\PaymentManager;
+use Froshly\Parakit\Support\WebhookProcessor;
 
 class WebhookController
 {

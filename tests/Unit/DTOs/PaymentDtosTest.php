@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-use Gutian\Parakit\DTOs\PaymentRequest;
-use Gutian\Parakit\DTOs\PaymentResponse;
-use Gutian\Parakit\DTOs\PaymentError;
-use Gutian\Parakit\Enums\Currency;
-use Gutian\Parakit\Enums\PaymentErrorCode;
-use Gutian\Parakit\Enums\PaymentStatus;
+use Froshly\Parakit\DTOs\PaymentRequest;
+use Froshly\Parakit\DTOs\PaymentResponse;
+use Froshly\Parakit\DTOs\PaymentError;
+use Froshly\Parakit\Enums\Currency;
+use Froshly\Parakit\Enums\PaymentErrorCode;
+use Froshly\Parakit\Enums\PaymentStatus;
 
 it('builds a payment request with minimal args', function () {
     $r = new PaymentRequest(

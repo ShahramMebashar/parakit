@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Contracts;
+namespace Froshly\Parakit\Contracts;
 
-use Gutian\Parakit\DTOs\PaymentResponse;
+use Froshly\Parakit\DTOs\PaymentResponse;
 
 interface SupportsStatusCheck
 {

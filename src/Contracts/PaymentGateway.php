@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Contracts;
+namespace Froshly\Parakit\Contracts;
 
 use Illuminate\Http\Request;
-use Gutian\Parakit\DTOs\PaymentRequest;
-use Gutian\Parakit\DTOs\PaymentResponse;
-use Gutian\Parakit\DTOs\WebhookPayload;
+use Froshly\Parakit\DTOs\PaymentRequest;
+use Froshly\Parakit\DTOs\PaymentResponse;
+use Froshly\Parakit\DTOs\WebhookPayload;
 
 interface PaymentGateway
 {

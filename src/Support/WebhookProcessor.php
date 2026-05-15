@@ -1,22 +1,22 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Support;
+namespace Froshly\Parakit\Support;
 
 use DateTimeImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Gutian\Parakit\DTOs\WebhookPayload;
-use Gutian\Parakit\Enums\PaymentStatus;
-use Gutian\Parakit\Events\PaymentCancelled;
-use Gutian\Parakit\Events\PaymentFailed;
-use Gutian\Parakit\Events\PaymentRefunded;
-use Gutian\Parakit\Events\PaymentSucceeded;
-use Gutian\Parakit\Exceptions\DuplicateWebhookException;
-use Gutian\Parakit\Exceptions\IllegalStateTransitionException;
-use Gutian\Parakit\Models\PaymentTransaction;
-use Gutian\Parakit\Models\PaymentWebhookEvent;
+use Froshly\Parakit\DTOs\WebhookPayload;
+use Froshly\Parakit\Enums\PaymentStatus;
+use Froshly\Parakit\Events\PaymentCancelled;
+use Froshly\Parakit\Events\PaymentFailed;
+use Froshly\Parakit\Events\PaymentRefunded;
+use Froshly\Parakit\Events\PaymentSucceeded;
+use Froshly\Parakit\Exceptions\DuplicateWebhookException;
+use Froshly\Parakit\Exceptions\IllegalStateTransitionException;
+use Froshly\Parakit\Models\PaymentTransaction;
+use Froshly\Parakit\Models\PaymentWebhookEvent;
 
 final class WebhookProcessor
 {

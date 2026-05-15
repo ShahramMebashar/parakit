@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Gateways\Fib;
+namespace Froshly\Parakit\Gateways\Fib;
 
 use Illuminate\Support\Facades\Log;
-use Gutian\Parakit\Enums\PaymentStatus;
+use Froshly\Parakit\Enums\PaymentStatus;
 
 final class FibStatusMap
 {

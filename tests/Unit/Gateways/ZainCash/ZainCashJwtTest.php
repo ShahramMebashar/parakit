@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-use Gutian\Parakit\Gateways\ZainCash\ZainCashJwt;
-use Gutian\Parakit\Exceptions\InvalidWebhookSignatureException;
+use Froshly\Parakit\Gateways\ZainCash\ZainCashJwt;
+use Froshly\Parakit\Exceptions\InvalidWebhookSignatureException;
 
 it('round-trips a signed JWT', function () {
     $jwt = new ZainCashJwt('shared-secret-shared-secret-1234');

@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Http\Middleware;
+namespace Froshly\Parakit\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Gutian\Parakit\Support\CorrelationId;
+use Froshly\Parakit\Support\CorrelationId;
 
 class AssignCorrelationId
 {

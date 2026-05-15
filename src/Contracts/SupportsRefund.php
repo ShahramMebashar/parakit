@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Contracts;
+namespace Froshly\Parakit\Contracts;
 
-use Gutian\Parakit\DTOs\RefundRequest;
-use Gutian\Parakit\DTOs\RefundResponse;
+use Froshly\Parakit\DTOs\RefundRequest;
+use Froshly\Parakit\DTOs\RefundResponse;
 
 interface SupportsRefund
 {

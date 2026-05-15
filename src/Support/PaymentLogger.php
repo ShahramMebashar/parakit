@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Support;
+namespace Froshly\Parakit\Support;
 
-use Gutian\Parakit\Models\PaymentLog;
+use Froshly\Parakit\Models\PaymentLog;
 
 final class PaymentLogger
 {

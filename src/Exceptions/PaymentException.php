@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Exceptions;
+namespace Froshly\Parakit\Exceptions;
 
 use RuntimeException;
 

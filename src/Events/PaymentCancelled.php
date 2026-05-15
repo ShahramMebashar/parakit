@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Events;
+namespace Froshly\Parakit\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
-use Gutian\Parakit\Models\PaymentTransaction;
+use Froshly\Parakit\Models\PaymentTransaction;
 
 class PaymentCancelled
 {

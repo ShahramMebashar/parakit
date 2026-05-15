@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Contracts;
+namespace Froshly\Parakit\Contracts;
 
-use Gutian\Parakit\DTOs\PaymentRequest;
-use Gutian\Parakit\DTOs\PaymentResponse;
-use Gutian\Parakit\Enums\Currency;
+use Froshly\Parakit\DTOs\PaymentRequest;
+use Froshly\Parakit\DTOs\PaymentResponse;
+use Froshly\Parakit\Enums\Currency;
 
 interface SupportsTokenization
 {

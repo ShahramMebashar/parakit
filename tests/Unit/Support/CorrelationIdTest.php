@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use Gutian\Parakit\Support\CorrelationId;
+use Froshly\Parakit\Support\CorrelationId;
 
 it('generates a 26-char ULID-like id', function () {
     $id = CorrelationId::generate();

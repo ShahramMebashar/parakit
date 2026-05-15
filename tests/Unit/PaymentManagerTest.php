@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-use Gutian\Parakit\PaymentManager;
-use Gutian\Parakit\Contracts\PaymentGateway;
-use Gutian\Parakit\Exceptions\UnsupportedGatewayException;
+use Froshly\Parakit\PaymentManager;
+use Froshly\Parakit\Contracts\PaymentGateway;
+use Froshly\Parakit\Exceptions\UnsupportedGatewayException;
 
 it('resolves a driver by name from config', function () {
     config()->set('parakit.default', 'stub');
@@ -11,8 +11,8 @@ it('resolves a driver by name from config', function () {
 
     $manager = app(PaymentManager::class);
     $manager->extend('stub', fn () => new class implements PaymentGateway {
-        public function charge($r): \Gutian\Parakit\DTOs\PaymentResponse { throw new RuntimeException('nope'); }
-        public function handleWebhook(\Illuminate\Http\Request $r): \Gutian\Parakit\DTOs\WebhookPayload { throw new RuntimeException('nope'); }
+        public function charge($r): \Froshly\Parakit\DTOs\PaymentResponse { throw new RuntimeException('nope'); }
+        public function handleWebhook(\Illuminate\Http\Request $r): \Froshly\Parakit\DTOs\WebhookPayload { throw new RuntimeException('nope'); }
         public function name(): string { return 'stub'; }
     });
 
@@ -42,8 +42,8 @@ it('memoises resolved drivers (same instance returned)', function () {
     $manager = app(PaymentManager::class);
     $manager->extend('stub', function () {
         return new class implements PaymentGateway {
-            public function charge($r): \Gutian\Parakit\DTOs\PaymentResponse { throw new RuntimeException('nope'); }
-            public function handleWebhook(\Illuminate\Http\Request $r): \Gutian\Parakit\DTOs\WebhookPayload { throw new RuntimeException('nope'); }
+            public function charge($r): \Froshly\Parakit\DTOs\PaymentResponse { throw new RuntimeException('nope'); }
+            public function handleWebhook(\Illuminate\Http\Request $r): \Froshly\Parakit\DTOs\WebhookPayload { throw new RuntimeException('nope'); }
             public function name(): string { return 'stub'; }
         };
     });

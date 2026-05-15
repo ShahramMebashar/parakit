@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Gutian\Parakit\Facades\Payment;
-use Gutian\Parakit\DTOs\RefundRequest;
-use Gutian\Parakit\Contracts\SupportsRefund;
+use Froshly\Parakit\Facades\Payment;
+use Froshly\Parakit\DTOs\RefundRequest;
+use Froshly\Parakit\Contracts\SupportsRefund;
 
 beforeEach(function () {
     Cache::flush();

@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Console;
+namespace Froshly\Parakit\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
-use Gutian\Parakit\Gateways\Fib\FibTokenCache;
+use Froshly\Parakit\Gateways\Fib\FibTokenCache;
 
 class DoctorCommand extends Command
 {

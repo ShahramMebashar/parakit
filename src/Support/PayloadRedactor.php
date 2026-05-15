@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Support;
+namespace Froshly\Parakit\Support;
 
 final class PayloadRedactor
 {

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use Gutian\Parakit\Models\PaymentLog;
+use Froshly\Parakit\Models\PaymentLog;
 
 beforeEach(fn () => $this->artisan('migrate'));
 

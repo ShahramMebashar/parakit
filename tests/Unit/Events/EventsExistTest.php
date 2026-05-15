@@ -2,10 +2,10 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
-use Gutian\Parakit\Events\PaymentSucceeded;
-use Gutian\Parakit\Models\PaymentTransaction;
-use Gutian\Parakit\Enums\PaymentStatus;
-use Gutian\Parakit\Enums\Currency;
+use Froshly\Parakit\Events\PaymentSucceeded;
+use Froshly\Parakit\Models\PaymentTransaction;
+use Froshly\Parakit\Enums\PaymentStatus;
+use Froshly\Parakit\Enums\Currency;
 
 beforeEach(fn () => $this->artisan('migrate'));
 

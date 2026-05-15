@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Gateways\Fib;
+namespace Froshly\Parakit\Gateways\Fib;
 
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
-use Gutian\Parakit\Exceptions\GatewayUnavailableException;
+use Froshly\Parakit\Exceptions\GatewayUnavailableException;
 
 final class FibClient
 {

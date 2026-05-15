@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Console;
+namespace Froshly\Parakit\Console;
 
 use Illuminate\Console\Command;
 

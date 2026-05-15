@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use Gutian\Parakit\Gateways\ZainCash\ZainCashJwt;
+use Froshly\Parakit\Gateways\ZainCash\ZainCashJwt;
 
 beforeEach(function () {
     config()->set('parakit.gateways.zaincash', [

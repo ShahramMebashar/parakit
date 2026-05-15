@@ -1,22 +1,22 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Gateways;
+namespace Froshly\Parakit\Gateways;
 
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Gutian\Parakit\Contracts\PaymentGateway;
-use Gutian\Parakit\DTOs\PaymentRequest;
-use Gutian\Parakit\DTOs\PaymentResponse;
-use Gutian\Parakit\DTOs\WebhookPayload;
-use Gutian\Parakit\Enums\PaymentStatus;
-use Gutian\Parakit\Events\PaymentInitiated;
-use Gutian\Parakit\Exceptions\GatewayUnavailableException;
-use Gutian\Parakit\Models\PaymentTransaction;
-use Gutian\Parakit\Support\CircuitBreaker;
-use Gutian\Parakit\Support\CorrelationId;
-use Gutian\Parakit\Support\IdempotencyKey;
+use Froshly\Parakit\Contracts\PaymentGateway;
+use Froshly\Parakit\DTOs\PaymentRequest;
+use Froshly\Parakit\DTOs\PaymentResponse;
+use Froshly\Parakit\DTOs\WebhookPayload;
+use Froshly\Parakit\Enums\PaymentStatus;
+use Froshly\Parakit\Events\PaymentInitiated;
+use Froshly\Parakit\Exceptions\GatewayUnavailableException;
+use Froshly\Parakit\Models\PaymentTransaction;
+use Froshly\Parakit\Support\CircuitBreaker;
+use Froshly\Parakit\Support\CorrelationId;
+use Froshly\Parakit\Support\IdempotencyKey;
 
 abstract class AbstractGateway implements PaymentGateway
 {

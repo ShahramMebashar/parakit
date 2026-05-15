@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\DTOs;
+namespace Froshly\Parakit\DTOs;
 
 use InvalidArgumentException;
 

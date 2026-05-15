@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Enums;
+namespace Froshly\Parakit\Enums;
 
 enum Gateway: string
 {

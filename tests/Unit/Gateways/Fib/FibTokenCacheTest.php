@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Gutian\Parakit\Gateways\Fib\FibTokenCache;
+use Froshly\Parakit\Gateways\Fib\FibTokenCache;
 
 beforeEach(fn () => Cache::flush());
 
@@ -60,4 +60,4 @@ it('throws GatewayUnavailable on token endpoint 5xx', function () {
     Http::fake(['*/protocol/openid-connect/token' => Http::response([], 502)]);
     $cache = new FibTokenCache('https://fib.stage.fib.iq', 'cid', 'csecret');
     $cache->token();
-})->throws(\Gutian\Parakit\Exceptions\GatewayUnavailableException::class);
+})->throws(\Froshly\Parakit\Exceptions\GatewayUnavailableException::class);

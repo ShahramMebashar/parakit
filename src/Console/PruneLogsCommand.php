@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Console;
+namespace Froshly\Parakit\Console;
 
 use Illuminate\Console\Command;
-use Gutian\Parakit\Models\PaymentLog;
+use Froshly\Parakit\Models\PaymentLog;
 
 class PruneLogsCommand extends Command
 {

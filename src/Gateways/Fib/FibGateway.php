@@ -1,23 +1,23 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Gateways\Fib;
+namespace Froshly\Parakit\Gateways\Fib;
 
 use DateTimeImmutable;
 use Illuminate\Http\Request;
-use Gutian\Parakit\Contracts\SupportsRefund;
-use Gutian\Parakit\Contracts\SupportsStatusCheck;
-use Gutian\Parakit\DTOs\PaymentRequest;
-use Gutian\Parakit\DTOs\PaymentResponse;
-use Gutian\Parakit\DTOs\RefundRequest;
-use Gutian\Parakit\DTOs\RefundResponse;
-use Gutian\Parakit\DTOs\WebhookPayload;
-use Gutian\Parakit\Enums\Currency;
-use Gutian\Parakit\Enums\PaymentStatus;
-use Gutian\Parakit\Exceptions\GatewayUnavailableException;
-use Gutian\Parakit\Exceptions\InvalidWebhookSignatureException;
-use Gutian\Parakit\Gateways\AbstractGateway;
-use Gutian\Parakit\Support\Money;
+use Froshly\Parakit\Contracts\SupportsRefund;
+use Froshly\Parakit\Contracts\SupportsStatusCheck;
+use Froshly\Parakit\DTOs\PaymentRequest;
+use Froshly\Parakit\DTOs\PaymentResponse;
+use Froshly\Parakit\DTOs\RefundRequest;
+use Froshly\Parakit\DTOs\RefundResponse;
+use Froshly\Parakit\DTOs\WebhookPayload;
+use Froshly\Parakit\Enums\Currency;
+use Froshly\Parakit\Enums\PaymentStatus;
+use Froshly\Parakit\Exceptions\GatewayUnavailableException;
+use Froshly\Parakit\Exceptions\InvalidWebhookSignatureException;
+use Froshly\Parakit\Gateways\AbstractGateway;
+use Froshly\Parakit\Support\Money;
 
 final class FibGateway extends AbstractGateway implements SupportsRefund, SupportsStatusCheck
 {

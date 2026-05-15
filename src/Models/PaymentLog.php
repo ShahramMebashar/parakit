@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Models;
+namespace Froshly\Parakit\Models;
 
 use Illuminate\Database\Eloquent\Model;
 

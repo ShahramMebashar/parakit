@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-use Gutian\Parakit\Gateways\AbstractGateway;
-use Gutian\Parakit\DTOs\PaymentRequest;
-use Gutian\Parakit\DTOs\PaymentResponse;
-use Gutian\Parakit\DTOs\WebhookPayload;
-use Gutian\Parakit\Enums\Currency;
-use Gutian\Parakit\Enums\PaymentStatus;
-use Gutian\Parakit\Events\PaymentInitiated;
-use Gutian\Parakit\Exceptions\GatewayUnavailableException;
-use Gutian\Parakit\Models\PaymentTransaction;
+use Froshly\Parakit\Gateways\AbstractGateway;
+use Froshly\Parakit\DTOs\PaymentRequest;
+use Froshly\Parakit\DTOs\PaymentResponse;
+use Froshly\Parakit\DTOs\WebhookPayload;
+use Froshly\Parakit\Enums\Currency;
+use Froshly\Parakit\Enums\PaymentStatus;
+use Froshly\Parakit\Events\PaymentInitiated;
+use Froshly\Parakit\Exceptions\GatewayUnavailableException;
+use Froshly\Parakit\Models\PaymentTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -54,24 +54,24 @@ it('retries on transient failure and ultimately returns success', function () {
     config()->set('parakit.reliability.retry.max_attempts', 3);
     config()->set('parakit.reliability.retry.base_delay_ms', 1);
 
-    $gw = new class('dummy', []) extends \Gutian\Parakit\Gateways\AbstractGateway {
+    $gw = new class('dummy', []) extends \Froshly\Parakit\Gateways\AbstractGateway {
         public int $calls = 0;
-        protected function performCharge(\Gutian\Parakit\DTOs\PaymentRequest $r): \Gutian\Parakit\DTOs\PaymentResponse {
+        protected function performCharge(\Froshly\Parakit\DTOs\PaymentRequest $r): \Froshly\Parakit\DTOs\PaymentResponse {
             $this->calls++;
             if ($this->calls < 3) {
-                throw new \Gutian\Parakit\Exceptions\GatewayUnavailableException('transient');
+                throw new \Froshly\Parakit\Exceptions\GatewayUnavailableException('transient');
             }
-            return new \Gutian\Parakit\DTOs\PaymentResponse(
+            return new \Froshly\Parakit\DTOs\PaymentResponse(
                 success: true, gateway: 'dummy', gatewayTransactionId: 'ok',
-                reference: $r->reference, status: \Gutian\Parakit\Enums\PaymentStatus::Pending,
+                reference: $r->reference, status: \Froshly\Parakit\Enums\PaymentStatus::Pending,
                 amount: $r->amount, currency: $r->currency, correlationId: 'cid',
             );
         }
-        public function handleWebhook(\Illuminate\Http\Request $r): \Gutian\Parakit\DTOs\WebhookPayload { throw new RuntimeException('n/a'); }
+        public function handleWebhook(\Illuminate\Http\Request $r): \Froshly\Parakit\DTOs\WebhookPayload { throw new RuntimeException('n/a'); }
         public function name(): string { return 'dummy'; }
     };
 
-    $resp = $gw->charge(new \Gutian\Parakit\DTOs\PaymentRequest('ord_retry', 1, \Gutian\Parakit\Enums\Currency::IQD, 'd', idempotencyKey: 'k_retry'));
+    $resp = $gw->charge(new \Froshly\Parakit\DTOs\PaymentRequest('ord_retry', 1, \Froshly\Parakit\Enums\Currency::IQD, 'd', idempotencyKey: 'k_retry'));
     expect($gw->calls)->toBe(3)->and($resp->success)->toBeTrue();
 });
 
@@ -79,30 +79,30 @@ it('fires PaymentInitiated exactly once per charge call (not per retry, not on i
     config()->set('parakit.reliability.retry.max_attempts', 3);
     config()->set('parakit.reliability.retry.base_delay_ms', 1);
 
-    Illuminate\Support\Facades\Event::fake([\Gutian\Parakit\Events\PaymentInitiated::class]);
+    Illuminate\Support\Facades\Event::fake([\Froshly\Parakit\Events\PaymentInitiated::class]);
 
-    $gw = new class('dummy', []) extends \Gutian\Parakit\Gateways\AbstractGateway {
+    $gw = new class('dummy', []) extends \Froshly\Parakit\Gateways\AbstractGateway {
         public int $calls = 0;
-        protected function performCharge(\Gutian\Parakit\DTOs\PaymentRequest $r): \Gutian\Parakit\DTOs\PaymentResponse {
+        protected function performCharge(\Froshly\Parakit\DTOs\PaymentRequest $r): \Froshly\Parakit\DTOs\PaymentResponse {
             $this->calls++;
             if ($this->calls < 2) {
-                throw new \Gutian\Parakit\Exceptions\GatewayUnavailableException('flap');
+                throw new \Froshly\Parakit\Exceptions\GatewayUnavailableException('flap');
             }
-            return new \Gutian\Parakit\DTOs\PaymentResponse(
+            return new \Froshly\Parakit\DTOs\PaymentResponse(
                 success: true, gateway: 'dummy', gatewayTransactionId: 'g',
-                reference: $r->reference, status: \Gutian\Parakit\Enums\PaymentStatus::Pending,
+                reference: $r->reference, status: \Froshly\Parakit\Enums\PaymentStatus::Pending,
                 amount: $r->amount, currency: $r->currency, correlationId: 'c',
             );
         }
-        public function handleWebhook(\Illuminate\Http\Request $r): \Gutian\Parakit\DTOs\WebhookPayload { throw new RuntimeException('n/a'); }
+        public function handleWebhook(\Illuminate\Http\Request $r): \Froshly\Parakit\DTOs\WebhookPayload { throw new RuntimeException('n/a'); }
         public function name(): string { return 'dummy'; }
     };
 
-    $req = new \Gutian\Parakit\DTOs\PaymentRequest('ord_init', 1, \Gutian\Parakit\Enums\Currency::IQD, 'd', idempotencyKey: 'init1');
+    $req = new \Froshly\Parakit\DTOs\PaymentRequest('ord_init', 1, \Froshly\Parakit\Enums\Currency::IQD, 'd', idempotencyKey: 'init1');
     $gw->charge($req);
     $gw->charge($req); // second call is an idempotent cache hit
 
-    Illuminate\Support\Facades\Event::assertDispatchedTimes(\Gutian\Parakit\Events\PaymentInitiated::class, 1);
+    Illuminate\Support\Facades\Event::assertDispatchedTimes(\Froshly\Parakit\Events\PaymentInitiated::class, 1);
 });
 
 it('persists a Pending PaymentTransaction before the gateway call (write-ahead)', function () {
@@ -209,26 +209,26 @@ it('opens the circuit after threshold failures and fails fast thereafter', funct
     config()->set('parakit.reliability.circuit_breaker.failure_threshold', 2);
     config()->set('parakit.reliability.circuit_breaker.cooldown_seconds', 60);
 
-    $gw = new class('dummy', []) extends \Gutian\Parakit\Gateways\AbstractGateway {
+    $gw = new class('dummy', []) extends \Froshly\Parakit\Gateways\AbstractGateway {
         public int $calls = 0;
-        protected function performCharge(\Gutian\Parakit\DTOs\PaymentRequest $r): \Gutian\Parakit\DTOs\PaymentResponse {
+        protected function performCharge(\Froshly\Parakit\DTOs\PaymentRequest $r): \Froshly\Parakit\DTOs\PaymentResponse {
             $this->calls++;
-            throw new \Gutian\Parakit\Exceptions\GatewayUnavailableException('boom');
+            throw new \Froshly\Parakit\Exceptions\GatewayUnavailableException('boom');
         }
-        public function handleWebhook(\Illuminate\Http\Request $r): \Gutian\Parakit\DTOs\WebhookPayload { throw new RuntimeException('n/a'); }
+        public function handleWebhook(\Illuminate\Http\Request $r): \Froshly\Parakit\DTOs\WebhookPayload { throw new RuntimeException('n/a'); }
         public function name(): string { return 'dummy'; }
     };
 
-    $req1 = new \Gutian\Parakit\DTOs\PaymentRequest('ord_a', 1, \Gutian\Parakit\Enums\Currency::IQD, 'd', idempotencyKey: 'a');
-    $req2 = new \Gutian\Parakit\DTOs\PaymentRequest('ord_b', 1, \Gutian\Parakit\Enums\Currency::IQD, 'd', idempotencyKey: 'b');
-    $req3 = new \Gutian\Parakit\DTOs\PaymentRequest('ord_c', 1, \Gutian\Parakit\Enums\Currency::IQD, 'd', idempotencyKey: 'c');
+    $req1 = new \Froshly\Parakit\DTOs\PaymentRequest('ord_a', 1, \Froshly\Parakit\Enums\Currency::IQD, 'd', idempotencyKey: 'a');
+    $req2 = new \Froshly\Parakit\DTOs\PaymentRequest('ord_b', 1, \Froshly\Parakit\Enums\Currency::IQD, 'd', idempotencyKey: 'b');
+    $req3 = new \Froshly\Parakit\DTOs\PaymentRequest('ord_c', 1, \Froshly\Parakit\Enums\Currency::IQD, 'd', idempotencyKey: 'c');
 
     try { $gw->charge($req1); } catch (\Throwable) {}
     try { $gw->charge($req2); } catch (\Throwable) {}
 
     // Breaker should now be open: third call must NOT reach performCharge.
     $caught = false;
-    try { $gw->charge($req3); } catch (\Gutian\Parakit\Exceptions\GatewayUnavailableException) { $caught = true; }
+    try { $gw->charge($req3); } catch (\Froshly\Parakit\Exceptions\GatewayUnavailableException) { $caught = true; }
 
     expect($caught)->toBeTrue()->and($gw->calls)->toBe(2);
 });

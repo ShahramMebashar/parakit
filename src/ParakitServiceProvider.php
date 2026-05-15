@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit;
+namespace Froshly\Parakit;
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\ServiceProvider;
@@ -36,12 +36,12 @@ class ParakitServiceProvider extends ServiceProvider
             ], 'parakit-lang');
 
             $this->commands([
-                \Gutian\Parakit\Console\InstallCommand::class,
-                \Gutian\Parakit\Console\DoctorCommand::class,
-                \Gutian\Parakit\Console\SweepPendingCommand::class,
-                \Gutian\Parakit\Console\TestChargeCommand::class,
-                \Gutian\Parakit\Console\SimulateWebhookCommand::class,
-                \Gutian\Parakit\Console\PruneLogsCommand::class,
+                \Froshly\Parakit\Console\InstallCommand::class,
+                \Froshly\Parakit\Console\DoctorCommand::class,
+                \Froshly\Parakit\Console\SweepPendingCommand::class,
+                \Froshly\Parakit\Console\TestChargeCommand::class,
+                \Froshly\Parakit\Console\SimulateWebhookCommand::class,
+                \Froshly\Parakit\Console\PruneLogsCommand::class,
             ]);
         }
 

@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
-use Gutian\Parakit\Models\PaymentTransaction;
-use Gutian\Parakit\Enums\PaymentStatus;
-use Gutian\Parakit\Enums\Currency;
+use Froshly\Parakit\Models\PaymentTransaction;
+use Froshly\Parakit\Enums\PaymentStatus;
+use Froshly\Parakit\Enums\Currency;
 
 beforeEach(function () {
     Cache::flush();

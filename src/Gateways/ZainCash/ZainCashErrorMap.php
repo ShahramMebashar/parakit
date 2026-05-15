@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Gateways\ZainCash;
+namespace Froshly\Parakit\Gateways\ZainCash;
 
-use Gutian\Parakit\Enums\PaymentErrorCode;
+use Froshly\Parakit\Enums\PaymentErrorCode;
 
 final class ZainCashErrorMap
 {

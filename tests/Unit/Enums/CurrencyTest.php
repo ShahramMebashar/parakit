@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use Gutian\Parakit\Enums\Currency;
+use Froshly\Parakit\Enums\Currency;
 
 it('returns minor-unit factor per currency', function () {
     expect(Currency::IQD->minorUnitFactor())->toBe(1)

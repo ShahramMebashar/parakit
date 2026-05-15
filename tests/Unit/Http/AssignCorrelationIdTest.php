@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Gutian\Parakit\Http\Middleware\AssignCorrelationId;
-use Gutian\Parakit\Support\CorrelationId;
+use Froshly\Parakit\Http\Middleware\AssignCorrelationId;
+use Froshly\Parakit\Support\CorrelationId;
 
 beforeEach(fn () => CorrelationId::reset());
 

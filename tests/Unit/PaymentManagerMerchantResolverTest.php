@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-use Gutian\Parakit\PaymentManager;
-use Gutian\Parakit\Contracts\PaymentGateway;
-use Gutian\Parakit\DTOs\PaymentResponse;
-use Gutian\Parakit\DTOs\WebhookPayload;
-use Gutian\Parakit\Exceptions\UnsupportedGatewayException;
+use Froshly\Parakit\PaymentManager;
+use Froshly\Parakit\Contracts\PaymentGateway;
+use Froshly\Parakit\DTOs\PaymentResponse;
+use Froshly\Parakit\DTOs\WebhookPayload;
+use Froshly\Parakit\Exceptions\UnsupportedGatewayException;
 
 function makeStubGateway(string $label = 'stub'): PaymentGateway
 {

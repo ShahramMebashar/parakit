@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use Gutian\Parakit\Support\PayloadRedactor;
+use Froshly\Parakit\Support\PayloadRedactor;
 
 it('redacts configured key names recursively', function () {
     $r = new PayloadRedactor(['password', 'secret', 'token']);

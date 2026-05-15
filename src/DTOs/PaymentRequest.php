@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\DTOs;
+namespace Froshly\Parakit\DTOs;
 
 use InvalidArgumentException;
-use Gutian\Parakit\Enums\Currency;
+use Froshly\Parakit\Enums\Currency;
 
 final readonly class PaymentRequest
 {

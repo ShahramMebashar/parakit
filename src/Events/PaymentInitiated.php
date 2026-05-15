@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Events;
+namespace Froshly\Parakit\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
-use Gutian\Parakit\DTOs\PaymentRequest;
-use Gutian\Parakit\Models\PaymentTransaction;
+use Froshly\Parakit\DTOs\PaymentRequest;
+use Froshly\Parakit\Models\PaymentTransaction;
 
 class PaymentInitiated
 {

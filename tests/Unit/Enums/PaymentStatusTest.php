@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use Gutian\Parakit\Enums\PaymentStatus;
+use Froshly\Parakit\Enums\PaymentStatus;
 
 it('classifies terminal states', function () {
     expect(PaymentStatus::Paid->isTerminal())->toBeTrue()

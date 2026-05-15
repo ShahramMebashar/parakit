@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Console;
+namespace Froshly\Parakit\Console;
 
 use Illuminate\Console\Command;
-use Gutian\Parakit\DTOs\PaymentRequest;
-use Gutian\Parakit\Enums\Currency;
-use Gutian\Parakit\PaymentManager;
+use Froshly\Parakit\DTOs\PaymentRequest;
+use Froshly\Parakit\Enums\Currency;
+use Froshly\Parakit\PaymentManager;
 
 class TestChargeCommand extends Command
 {

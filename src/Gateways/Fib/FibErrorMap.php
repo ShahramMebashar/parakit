@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Gateways\Fib;
+namespace Froshly\Parakit\Gateways\Fib;
 
-use Gutian\Parakit\Enums\PaymentErrorCode;
+use Froshly\Parakit\Enums\PaymentErrorCode;
 
 final class FibErrorMap
 {

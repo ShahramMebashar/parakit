@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-use Gutian\Parakit\Models\PaymentLog;
-use Gutian\Parakit\Support\PaymentLogger;
+use Froshly\Parakit\Models\PaymentLog;
+use Froshly\Parakit\Support\PaymentLogger;
 
 beforeEach(fn () => $this->artisan('migrate'));
 

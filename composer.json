@@ -1,5 +1,5 @@
 {
-  "name": "gutian/parakit",
+  "name": "froshly/parakit",
   "description": "The payment kit for Kurdistan and Iraq — Laravel-native.",
   "type": "library",
   "license": "MIT",
@@ -19,15 +19,15 @@
     "larastan/larastan": "^3.0"
   },
   "autoload": {
-    "psr-4": { "Gutian\\Parakit\\": "src/" }
+    "psr-4": { "Froshly\\Parakit\\": "src/" }
   },
   "autoload-dev": {
-    "psr-4": { "Gutian\\Parakit\\Tests\\": "tests/" }
+    "psr-4": { "Froshly\\Parakit\\Tests\\": "tests/" }
   },
   "extra": {
     "laravel": {
-      "providers": ["Gutian\\Parakit\\ParakitServiceProvider"],
-      "aliases": { "Payment": "Gutian\\Parakit\\Facades\\Payment" }
+      "providers": ["Froshly\\Parakit\\ParakitServiceProvider"],
+      "aliases": { "Payment": "Froshly\\Parakit\\Facades\\Payment" }
     }
   },
   "scripts": {

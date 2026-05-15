@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-use Gutian\Parakit\Gateways\ZainCash\ZainCashErrorMap;
-use Gutian\Parakit\Enums\PaymentErrorCode;
+use Froshly\Parakit\Gateways\ZainCash\ZainCashErrorMap;
+use Froshly\Parakit\Enums\PaymentErrorCode;
 
 it('maps known ZainCash error strings', function () {
     expect(ZainCashErrorMap::toCode('Insufficient Balance'))->toBe(PaymentErrorCode::InsufficientFunds)

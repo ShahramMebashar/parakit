@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
-use Gutian\Parakit\Gateways\Fib\FibClient;
-use Gutian\Parakit\Gateways\Fib\FibTokenCache;
+use Froshly\Parakit\Gateways\Fib\FibClient;
+use Froshly\Parakit\Gateways\Fib\FibTokenCache;
 
 beforeEach(fn () => Cache::flush());
 

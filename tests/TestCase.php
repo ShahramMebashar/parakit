@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Tests;
+namespace Froshly\Parakit\Tests;
 
 use Orchestra\Testbench\TestCase as Orchestra;
-use Gutian\Parakit\ParakitServiceProvider;
+use Froshly\Parakit\ParakitServiceProvider;
 
 abstract class TestCase extends Orchestra
 {

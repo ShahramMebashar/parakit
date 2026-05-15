@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Models;
+namespace Froshly\Parakit\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
-use Gutian\Parakit\Enums\Currency;
-use Gutian\Parakit\Enums\PaymentStatus;
-use Gutian\Parakit\Exceptions\IllegalStateTransitionException;
+use Froshly\Parakit\Enums\Currency;
+use Froshly\Parakit\Enums\PaymentStatus;
+use Froshly\Parakit\Exceptions\IllegalStateTransitionException;
 
 class PaymentTransaction extends Model
 {

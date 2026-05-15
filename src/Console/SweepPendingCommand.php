@@ -1,18 +1,18 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Console;
+namespace Froshly\Parakit\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Gutian\Parakit\Contracts\SupportsStatusCheck;
-use Gutian\Parakit\Enums\PaymentStatus;
-use Gutian\Parakit\Events\PaymentCancelled;
-use Gutian\Parakit\Events\PaymentFailed;
-use Gutian\Parakit\Events\PaymentSucceeded;
-use Gutian\Parakit\Exceptions\IllegalStateTransitionException;
-use Gutian\Parakit\Models\PaymentTransaction;
-use Gutian\Parakit\PaymentManager;
+use Froshly\Parakit\Contracts\SupportsStatusCheck;
+use Froshly\Parakit\Enums\PaymentStatus;
+use Froshly\Parakit\Events\PaymentCancelled;
+use Froshly\Parakit\Events\PaymentFailed;
+use Froshly\Parakit\Events\PaymentSucceeded;
+use Froshly\Parakit\Exceptions\IllegalStateTransitionException;
+use Froshly\Parakit\Models\PaymentTransaction;
+use Froshly\Parakit\PaymentManager;
 
 class SweepPendingCommand extends Command
 {

@@ -30,7 +30,7 @@ Take payments from Iraqi and Kurdish customers in a Laravel app — **FIB**, **Z
 ## Install
 
 ```bash
-composer require gutian/parakit
+composer require froshly/parakit
 php artisan parakit:install
 ```
 
@@ -74,8 +74,8 @@ php artisan parakit:test-charge fib --amount=1000
 ### Fluent builder (recommended)
 
 ```php
-use Gutian\Parakit\Facades\Payment;
-use Gutian\Parakit\Enums\Currency;
+use Froshly\Parakit\Facades\Payment;
+use Froshly\Parakit\Enums\Currency;
 
 $response = Payment::for($order)
     ->driver('fib')
@@ -99,7 +99,7 @@ return view('checkout.fib', [
 ### Explicit DTO
 
 ```php
-use Gutian\Parakit\DTOs\PaymentRequest;
+use Froshly\Parakit\DTOs\PaymentRequest;
 
 $response = Payment::driver('zaincash')->charge(new PaymentRequest(
     reference: $order->id,
@@ -118,7 +118,7 @@ return redirect()->away($response->redirectUrl);
 Parakit registers `POST /payments/webhooks/{gateway}` automatically. Listen for lifecycle events anywhere in your app:
 
 ```php
-use Gutian\Parakit\Events\PaymentSucceeded;
+use Froshly\Parakit\Events\PaymentSucceeded;
 
 Event::listen(PaymentSucceeded::class, function ($event) {
     Order::find($event->transaction->reference)->markPaid();
@@ -212,7 +212,7 @@ When merchants self-onboard and their credentials live in your database — not 
 
 ```php
 // app/Providers/AppServiceProvider.php — boot()
-use Gutian\Parakit\Facades\Payment;
+use Froshly\Parakit\Facades\Payment;
 
 Payment::resolveMerchantUsing(function (string $gateway): array {
     $merchant = app(TenantManager::class)->current();

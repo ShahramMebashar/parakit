@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\Gateways\ZainCash;
+namespace Froshly\Parakit\Gateways\ZainCash;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
-use Gutian\Parakit\Exceptions\InvalidWebhookSignatureException;
+use Froshly\Parakit\Exceptions\InvalidWebhookSignatureException;
 
 /**
  * HS256-pinned JWT helper for ZainCash init/webhook payloads.

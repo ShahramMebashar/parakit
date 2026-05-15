@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Gutian\Parakit\DTOs;
+namespace Froshly\Parakit\DTOs;
 
-use Gutian\Parakit\Enums\PaymentErrorCode;
+use Froshly\Parakit\Enums\PaymentErrorCode;
 
 final readonly class PaymentError
 {
