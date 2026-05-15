@@ -1,0 +1,16 @@
+{
+  "success": true,
+  "code": 0,
+  "status_code": 200,
+  "data": {
+    "url": "https://3dsecure.nass.iq/gateway?token=b873837b-3784-4e92-a26c-8c142544251c",
+    "pSign": "4b2c962ee8f1e07e31a73f70b5e66067",
+    "transactionParams": {
+      "TERMINAL": "00093270",
+      "TRTYPE": "1",
+      "AMOUNT": "5000",
+      "CURRENCY": "368",
+      "ORDER": "4471920038"
+    }
+  }
+}
