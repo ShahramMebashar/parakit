@@ -135,7 +135,40 @@ final class ZainCashGateway extends AbstractGateway implements SupportsStatusChe
 
     public function refund(RefundRequest $request): RefundResponse
     {
-        throw new \RuntimeException('not implemented');
+        // v2 reverse is full-refund only — there is no amount parameter. If the
+        // caller asked for a partial refund (amount != original charge), reject
+        // before touching the gateway. The original amount comes from the
+        // persisted transaction row; if no row exists we cannot validate and
+        // proceed with a full reverse.
+        $tx = PaymentTransaction::query()
+            ->where('gateway', $this->name())
+            ->where('gateway_transaction_id', $request->transactionId)
+            ->first();
+        if ($tx !== null && (int) $tx->amount !== $request->amount) {
+            throw new \InvalidArgumentException(
+                'ZainCash supports full reversals only; refund amount must equal the original charge amount'
+            );
+        }
+
+        $raw = $this->client->reverse(
+            $request->transactionId,
+            $request->reason ?? 'Merchant-initiated reversal',
+        );
+
+        $reverseStatus = strtoupper((string) ($raw['status'] ?? ''));
+        $refundId = $raw['reversalReferenceId'] ?? null;
+        if ($reverseStatus !== 'COMPLETED' || !is_string($refundId) || $refundId === '') {
+            throw new GatewayUnavailableException(
+                "ZainCash reverse did not complete (status: {$reverseStatus})"
+            );
+        }
+
+        return new RefundResponse(
+            success: true,
+            refundId: $refundId,
+            refundedAmount: $request->amount,
+            raw: $raw,
+        );
     }
 
     public function handleWebhook(Request $request): WebhookPayload
