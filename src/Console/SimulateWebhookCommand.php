@@ -3,9 +3,10 @@ declare(strict_types=1);
 
 namespace Froshly\Parakit\Console;
 
+use Firebase\JWT\JWT;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
-use Froshly\Parakit\Gateways\ZainCash\ZainCashJwt;
+use Illuminate\Support\Str;
 
 class SimulateWebhookCommand extends Command
 {
@@ -26,13 +27,19 @@ class SimulateWebhookCommand extends Command
 
         $body = match ($gw) {
             'zaincash' => [
-                'token' => (new ZainCashJwt((string) ($cfg['secret'] ?? '')))->encode([
-                    'id' => (string) $this->option('transaction-id'),
-                    'status' => $this->mapStatus((string) $this->option('status')),
-                    'orderid' => (string) $this->option('reference'),
-                    'amount' => 5000,
-                    'iat' => time(),
-                ]),
+                // ZainCash v2 callbacks deliver an HS256 JWT (signed with the
+                // merchant api_key) wrapping a STATUS_CHANGED data{} envelope.
+                'token' => JWT::encode([
+                    'eventType' => 'STATUS_CHANGED',
+                    'eventId' => (string) Str::uuid(),
+                    'timestamp' => gmdate('c'),
+                    'data' => [
+                        'transactionId' => (string) $this->option('transaction-id'),
+                        'orderId' => (string) $this->option('reference'),
+                        'currentStatus' => $this->mapStatus((string) $this->option('status')),
+                        'amount' => ['currency' => 'IQD', 'value' => 5000],
+                    ],
+                ], (string) ($cfg['api_key'] ?? ''), 'HS256'),
             ],
             'fib' => [
                 'id' => (string) $this->option('transaction-id'),
@@ -49,9 +56,8 @@ class SimulateWebhookCommand extends Command
 
     private function mapStatus(string $s): string
     {
-        $s = strtolower($s);
-        // "paid" is the parakit-canonical name; ZainCash calls a successful
-        // payment "success". Every other status passes through unchanged.
-        return $s === 'paid' ? 'success' : $s;
+        // "paid" is the parakit-canonical name; ZainCash v2 calls a successful
+        // payment "SUCCESS". Every other status is upper-cased to match v2.
+        return strtolower($s) === 'paid' ? 'SUCCESS' : strtoupper($s);
     }
 }
