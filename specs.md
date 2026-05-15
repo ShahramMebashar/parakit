@@ -890,10 +890,14 @@ Qi Card, AsiaHawala, and other emerging Iraqi gateways. Subscription helpers. Ad
 
 ### FIB
 
-- OAuth2 client_credentials flow; token cached with TTL
+- OAuth2 client_credentials flow; token cached with TTL (FIB tokens live ~60s)
 - `monetaryValue.amount` is a decimal string, currency is `IQD` or `USD`
+- Charge sends `statusCallbackUrl` (webhook URL); optional `expiresIn` and
+  `refundableFor` are ISO-8601 durations, set via config (`fib.expires_in`,
+  `fib.refundable_for`) or per-request `metadata`
 - Callback delivers `{id, status}`; driver re-fetches status endpoint for full state
 - Refund window default `P7D` (configurable per merchant by FIB)
+- Supports payment cancellation (`SupportsCancel`) for active, unpaid payments
 - Returns `qrCode` (base64 PNG), `readableCode`, `personalAppLink`
 
 ### ZainCash

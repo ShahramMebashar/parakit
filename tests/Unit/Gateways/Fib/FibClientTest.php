@@ -57,3 +57,22 @@ it('fetches status by id', function () {
     $resp = $client->fetchStatus('f1f9d4c7-7c4f-4dc5-92c0-1234567890ab');
     expect($resp['status'])->toBe('PAID');
 });
+
+it('cancels a payment by id with a bearer token', function () {
+    Http::fake([
+        '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 60]),
+        '*/protected/v1/payments/*/cancel' => Http::response([], 200),
+    ]);
+
+    $client = new FibClient(
+        baseUrl: 'https://fib.stage.fib.iq',
+        tokens: new FibTokenCache('https://fib.stage.fib.iq', 'cid', 'csecret'),
+    );
+
+    $client->cancel('pid_1');
+
+    Http::assertSent(fn ($req) =>
+        $req->method() === 'POST'
+        && str_contains($req->url(), '/protected/v1/payments/pid_1/cancel')
+        && $req->header('Authorization')[0] === 'Bearer tok');
+});

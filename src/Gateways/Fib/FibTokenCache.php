@@ -45,7 +45,9 @@ final class FibTokenCache
         }
 
         $token = (string) $response->json('access_token');
-        $expiresIn = (int) $response->json('expires_in', 600);
+        // FIB documents a 60s access-token lifetime; default to that if the
+        // response omits expires_in rather than over-caching a stale token.
+        $expiresIn = (int) $response->json('expires_in', 60);
         // Guard the TTL: never let it drop to 0 or below (which means "delete
         // now" or "forever" depending on the cache store). 30s minimum keeps
         // a brief burst-protection window even if FIB hands us very short

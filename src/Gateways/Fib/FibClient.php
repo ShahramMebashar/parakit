@@ -27,7 +27,9 @@ final class FibClient
                 'currency' => $params['currency'],
             ],
             'description' => (string) ($params['description'] ?? ''),
-            'callbackUrl' => (string) ($params['callback'] ?? ''),
+            // FIB's create-payment field is `statusCallbackUrl` — the webhook
+            // URL FIB POSTs to on status changes.
+            'statusCallbackUrl' => (string) ($params['callback'] ?? ''),
         ];
         foreach (['statementDate', 'expiresIn', 'refundableFor', 'refusalDescription'] as $opt) {
             if (isset($params[$opt])) {
@@ -60,6 +62,17 @@ final class FibClient
         $res = $this->client()->post("/protected/v1/payments/{$paymentId}/refund");
         if (!$res->successful()) {
             throw new GatewayUnavailableException("FIB refund failed: HTTP {$res->status()}");
+        }
+        $json = $res->json();
+        return is_array($json) ? $json : [];
+    }
+
+    /** @return array<string, mixed> */
+    public function cancel(string $paymentId): array
+    {
+        $res = $this->client()->post("/protected/v1/payments/{$paymentId}/cancel");
+        if (!$res->successful()) {
+            throw new GatewayUnavailableException("FIB cancel failed: HTTP {$res->status()}");
         }
         $json = $res->json();
         return is_array($json) ? $json : [];

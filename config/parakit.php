@@ -38,6 +38,7 @@ return [
             'client_secret' => env('FIB_CLIENT_SECRET'),
             'currency' => env('FIB_CURRENCY', 'IQD'),
             'refundable_for' => env('FIB_REFUNDABLE_FOR', 'P7D'),
+            'expires_in' => env('FIB_EXPIRES_IN'),
             'callback_url' => env('FIB_CALLBACK_URL'),
         ],
         'zaincash' => [
