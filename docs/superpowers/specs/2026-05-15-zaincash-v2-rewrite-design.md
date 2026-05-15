@@ -131,7 +131,7 @@ Orchestration. Implements `SupportsStatusCheck` and `SupportsRefund`.
 
 | Field                     | Source |
 |---------------------------|--------|
-| `language`                | config `lang`, normalized to `En`/`Ar`/`Ku` |
+| `language`                | config `lang`, normalized to `En`/`Ar`/`Ku` (see note) |
 | `externalReferenceId`     | deterministic UUIDv5 derived from the framework idempotency key |
 | `orderId`                 | `PaymentRequest->reference` |
 | `serviceType`             | `metadata['service_type']` if set, else config `service_type` |
@@ -148,6 +148,12 @@ Response handling:
 - `expiryTime` -> `expiresAt`.
 - Status is `Pending` (init always yields a pending session).
 - Missing `redirectUrl` or `transactionId` -> `GatewayUnavailableException`.
+
+**Note — `language` casing:** the v2 doc contradicts itself. The params table
+states "Supported values: En, Ar, Ku", but every curl example sends lowercase
+`"language": "en"`. The spec follows the params table (`En`/`Ar`/`Ku`) as the
+documented contract; this must be confirmed against UAT during implementation
+and switched to lowercase if the gateway rejects title-case.
 
 **Why deterministic `externalReferenceId`:** `AbstractGateway` retries
 `performCharge()` on `GatewayUnavailableException`. A random UUID per call would
@@ -194,16 +200,30 @@ Handler logic:
 3. Parse the nested `data{}` envelope:
    - `data.transactionId` -> `gatewayTransactionId`
    - `data.orderId` -> `reference`
-   - `data.currentStatus` -> status via `ZainCashStatusMap`
    - `data.amount.value` -> `amount`
    - `data.customerMsisdn` -> surfaced in `raw` (pass-through wallet capture;
      the merchant app decides whether to persist and reuse it)
-4. `eventId` taken from the JWT's top-level `eventId` claim — ZainCash's own
+4. Resolve status from the top-level `eventType` claim:
+   - `STATUS_CHANGED` -> map `data.currentStatus` via `ZainCashStatusMap`.
+   - `REFUND_COMPLETED` -> `PaymentStatus::Refunded`.
+   - `REFUND_FAILED` -> map `data.currentStatus` (the payment itself is still
+     paid); the failed-refund signal is surfaced via `eventType` in `raw` and
+     logged as `parakit.zaincash.refund_failed`.
+   - unknown `eventType` -> fall back to mapping `data.currentStatus`, logged
+     as `parakit.zaincash.unknown_event`.
+5. `eventId` taken from the JWT's top-level `eventId` claim — ZainCash's own
    idempotency key, used directly (not synthesized).
-5. `occurredAt` from the JWT `timestamp` claim, fallback to now.
+6. `occurredAt` from the JWT `timestamp` claim, fallback to now.
+7. `eventType` is always carried through in `WebhookPayload->raw`.
 
 The webhook is the authoritative status source; the redirect token is a UX
 fallback. Both verify identically, so a single handler is correct.
+
+**Caveat:** the v2 doc shows `STATUS_CHANGED` callback payloads only — no
+`REFUND_COMPLETED`/`REFUND_FAILED` example. The `data{}` field paths for refund
+events are assumed identical and must be confirmed against a real production
+refund webhook; until then the `eventType` branch above is the best-effort
+contract.
 
 ## Wallet management
 
@@ -223,8 +243,9 @@ inquiry/reverse, and signed JWT fixtures for callbacks:
   `externalReferenceId` across retries, `metadata['service_type']` override.
 - **ZainCashStatusTest** — inquiry parsing, status mapping for each v2 value.
 - **ZainCashWebhookTest** — redirect `token` path, webhook `webhook_token`
-  path, `data{}` envelope parsing, `eventId` from claim, tampered/`alg:none`
-  rejection, missing token.
+  path, `data{}` envelope parsing, `eventId` from claim, `eventType` branching
+  (`STATUS_CHANGED`, `REFUND_COMPLETED`, `REFUND_FAILED`, unknown),
+  tampered/`alg:none` rejection, missing token.
 - **ZainCashJwtTest** — HS256 decode, algorithm pinning, expired token.
 - **ZainCashErrorMapTest** — v2 error codes + substring heuristics.
 - **ZainCashStatusMapTest** (new) — every v2 status string + unknown-drift log.
