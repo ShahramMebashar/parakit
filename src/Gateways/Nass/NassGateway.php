@@ -3,12 +3,16 @@ declare(strict_types=1);
 
 namespace Froshly\Parakit\Gateways\Nass;
 
+use DateTimeImmutable;
+use Illuminate\Http\Request;
 use Froshly\Parakit\Contracts\SupportsStatusCheck;
 use Froshly\Parakit\DTOs\PaymentRequest;
 use Froshly\Parakit\DTOs\PaymentResponse;
+use Froshly\Parakit\DTOs\WebhookPayload;
 use Froshly\Parakit\Enums\Currency;
 use Froshly\Parakit\Enums\PaymentStatus;
 use Froshly\Parakit\Exceptions\GatewayUnavailableException;
+use Froshly\Parakit\Exceptions\InvalidWebhookSignatureException;
 use Froshly\Parakit\Gateways\AbstractGateway;
 use Froshly\Parakit\Support\IdempotencyKey;
 use Froshly\Parakit\Support\Money;
@@ -120,9 +124,42 @@ final class NassGateway extends AbstractGateway implements SupportsStatusCheck
         return [$status, $currency, $amount];
     }
 
-    public function handleWebhook(\Illuminate\Http\Request $request): \Froshly\Parakit\DTOs\WebhookPayload
+    /**
+     * NassPay callbacks carry no signature, so the callback body cannot be
+     * trusted on its own. The trust boundary is the checkStatus endpoint: we
+     * read only the orderId from the callback, then re-fetch the authoritative
+     * state server-to-server. Any failure on that call is a verification
+     * failure (401 at the controller).
+     */
+    public function handleWebhook(Request $request): WebhookPayload
     {
-        // Implemented in Task 10.
-        throw new \LogicException('NassGateway::handleWebhook not yet implemented');
+        $orderId = (string) $request->input('orderId', '');
+        if ($orderId === '') {
+            throw new InvalidWebhookSignatureException('NassPay callback missing orderId');
+        }
+
+        try {
+            $raw = $this->client->checkStatus($orderId);
+        } catch (\Throwable $e) {
+            throw new InvalidWebhookSignatureException(
+                'NassPay status verification failed: ' . $e->getMessage(),
+                0,
+                $e,
+            );
+        }
+
+        [$status, $currency, $amount] = $this->parseStatusData($raw);
+
+        return new WebhookPayload(
+            gateway: $this->name(),
+            gatewayTransactionId: $orderId,
+            reference: '',
+            status: $status,
+            amount: $amount,
+            currency: $currency,
+            eventId: $orderId . ':' . $status->value,
+            occurredAt: new DateTimeImmutable(),
+            raw: $raw,
+        );
     }
 }
