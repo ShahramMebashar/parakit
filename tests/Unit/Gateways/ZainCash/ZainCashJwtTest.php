@@ -1,35 +1,32 @@
 <?php
 declare(strict_types=1);
 
+use Firebase\JWT\JWT;
 use Froshly\Parakit\Gateways\ZainCash\ZainCashJwt;
 use Froshly\Parakit\Exceptions\InvalidWebhookSignatureException;
 
-it('round-trips a signed JWT', function () {
-    $jwt = new ZainCashJwt('shared-secret-shared-secret-1234');
-    $token = $jwt->encode(['msisdn' => '07710000000', 'amount' => 5000]);
-    $claims = $jwt->decode($token);
-    expect($claims['amount'])->toBe(5000);
+const ZC_SECRET = 'shared-secret-shared-secret-1234';
+
+it('decodes a JWT signed with the matching secret', function () {
+    $token = JWT::encode(['eventId' => 'e1', 'data' => ['orderId' => 'ord_1']], ZC_SECRET, 'HS256');
+    $claims = (new ZainCashJwt(ZC_SECRET))->decode($token);
+
+    expect($claims['eventId'])->toBe('e1')
+        ->and($claims['data']['orderId'])->toBe('ord_1');
 });
 
-it('rejects a JWT with the wrong secret', function () {
-    $jwt = new ZainCashJwt('shared-secret-shared-secret-1234');
-    $token = $jwt->encode(['amount' => 5000]);
-
-    (new ZainCashJwt('other-secret-other-secret-aaaaaa'))->decode($token);
+it('rejects a JWT signed with the wrong secret', function () {
+    $token = JWT::encode(['eventId' => 'e1'], 'other-secret-other-secret-aaaaaa', 'HS256');
+    (new ZainCashJwt(ZC_SECRET))->decode($token);
 })->throws(InvalidWebhookSignatureException::class);
 
 it('rejects a tampered JWT', function () {
-    $jwt = new ZainCashJwt('shared-secret-shared-secret-1234');
-    $token = $jwt->encode(['amount' => 5000]);
-    $tampered = substr($token, 0, -5) . 'XXXXX';
-    $jwt->decode($tampered);
+    $token = JWT::encode(['eventId' => 'e1'], ZC_SECRET, 'HS256');
+    (new ZainCashJwt(ZC_SECRET))->decode(substr($token, 0, -5) . 'XXXXX');
 })->throws(InvalidWebhookSignatureException::class);
 
 it('rejects an alg=none JWT (algorithm confusion attack)', function () {
-    // Manually crafted JWT with alg=none — must never pass.
-    $header = base64_encode(json_encode(['alg' => 'none', 'typ' => 'JWT']));
-    $payload = base64_encode(json_encode(['amount' => 5000]));
-    $token = strtr($header, '+/', '-_') . '.' . strtr($payload, '+/', '-_') . '.';
-
-    (new ZainCashJwt('shared-secret-shared-secret-1234'))->decode($token);
+    $header = strtr(base64_encode(json_encode(['alg' => 'none', 'typ' => 'JWT'])), '+/', '-_');
+    $payload = strtr(base64_encode(json_encode(['eventId' => 'e1'])), '+/', '-_');
+    (new ZainCashJwt(ZC_SECRET))->decode($header . '.' . $payload . '.');
 })->throws(InvalidWebhookSignatureException::class);
