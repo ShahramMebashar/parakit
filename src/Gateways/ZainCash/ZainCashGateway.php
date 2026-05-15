@@ -171,9 +171,74 @@ final class ZainCashGateway extends AbstractGateway implements SupportsStatusChe
         );
     }
 
+    /**
+     * Verify a ZainCash v2 callback (redirect token or server webhook).
+     *
+     * Both the redirect (`?token=`) and the webhook (`{webhook_token}`) deliver
+     * an HS256 JWT signed with the merchant API key. The JWT signature is the
+     * trust boundary — decoding with our shared secret rejects any forged or
+     * tampered payload, and the algorithm is pinned in ZainCashJwt.
+     */
     public function handleWebhook(Request $request): WebhookPayload
     {
-        throw new \RuntimeException('not implemented');
+        $token = (string) ($request->input('webhook_token')
+            ?? $request->input('token')
+            ?? '');
+        if ($token === '') {
+            throw new InvalidWebhookSignatureException('ZainCash callback missing token');
+        }
+
+        $claims = $this->jwt->decode($token);
+        $data = (array) ($claims['data'] ?? []);
+        $eventType = strtoupper((string) ($claims['eventType'] ?? ''));
+        $currentStatus = (string) ($data['currentStatus'] ?? '');
+
+        $status = match ($eventType) {
+            'STATUS_CHANGED'   => ZainCashStatusMap::toStatus($currentStatus),
+            'REFUND_COMPLETED' => PaymentStatus::Refunded,
+            'REFUND_FAILED'    => $this->onRefundFailed($currentStatus),
+            default            => $this->onUnknownEvent($eventType, $currentStatus),
+        };
+
+        $amountInfo = (array) ($data['amount'] ?? []);
+        $transactionId = (string) ($data['transactionId'] ?? '');
+
+        // Prefer ZainCash's own eventId for idempotency; fall back to a derived
+        // key only if the claim is absent.
+        $eventId = (string) ($claims['eventId'] ?? '');
+        if ($eventId === '') {
+            $eventId = $transactionId . ':' . $status->value;
+        }
+
+        return new WebhookPayload(
+            gateway: $this->name(),
+            gatewayTransactionId: $transactionId,
+            reference: (string) ($data['orderId'] ?? ''),
+            status: $status,
+            amount: (int) ($amountInfo['value'] ?? 0),
+            currency: Currency::IQD,
+            eventId: $eventId,
+            occurredAt: isset($claims['timestamp'])
+                ? new DateTimeImmutable((string) $claims['timestamp'])
+                : new DateTimeImmutable(),
+            raw: $claims,
+        );
+    }
+
+    /**
+     * A REFUND_FAILED event means the reversal failed; the payment itself is
+     * unchanged, so map currentStatus as usual but log the failed reversal.
+     */
+    private function onRefundFailed(string $currentStatus): PaymentStatus
+    {
+        Log::warning('parakit.zaincash.refund_failed', ['currentStatus' => $currentStatus]);
+        return ZainCashStatusMap::toStatus($currentStatus);
+    }
+
+    private function onUnknownEvent(string $eventType, string $currentStatus): PaymentStatus
+    {
+        Log::warning('parakit.zaincash.unknown_event', ['eventType' => $eventType]);
+        return ZainCashStatusMap::toStatus($currentStatus);
     }
 
     /**
