@@ -11,6 +11,22 @@ Take payments from Iraqi and Kurdish customers in a Laravel app — **FIB**, **Z
 
 ---
 
+## Contents
+
+- [Install](#install)
+- [Charge a customer](#charge-a-customer)
+- [Receive a webhook](#receive-a-webhook)
+- [What you get for free](#what-you-get-for-free)
+- [Operations](#operations)
+- [Multi-tenant / multiple merchants](#multi-tenant--multiple-merchants)
+  - [Credentials in a database — `resolveMerchantUsing()`](#credentials-in-a-database--resolvemerchantusing)
+- [Laravel Octane](#laravel-octane)
+- [Security](#security)
+- [Versioning](#versioning)
+- [License](#license)
+
+---
+
 ## Install
 
 ```bash

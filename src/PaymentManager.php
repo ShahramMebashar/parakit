@@ -18,7 +18,13 @@ class PaymentManager
     /** @var array<string, Closure(array, Container, string): PaymentGateway> */
     private array $customCreators = [];
 
-    /** @var (Closure(string): array<string,mixed>)|null */
+    /**
+     * User-supplied resolver. Documented to return an array<string,mixed>
+     * config, but typed `mixed` because the callback is untrusted — driver()
+     * guards the return at runtime.
+     *
+     * @var (Closure(string): mixed)|null
+     */
     private ?Closure $merchantResolver = null;
 
     public function __construct(private readonly Container $container) {}
@@ -50,7 +56,12 @@ class PaymentManager
         return $this->resolved[$name] = $this->makeDriver($name, $cfg);
     }
 
-    /** @param Closure(string): array<string,mixed> $resolver */
+    /**
+     * Register a callback that supplies the gateway config array for a given
+     * gateway name at request time. Expected to return array<string,mixed>.
+     *
+     * @param Closure(string): mixed $resolver
+     */
     public function resolveMerchantUsing(Closure $resolver): void
     {
         $this->merchantResolver = $resolver;
