@@ -3,15 +3,17 @@ declare(strict_types=1);
 
 namespace Froshly\Parakit\Gateways\Nass;
 
+use Froshly\Parakit\Contracts\SupportsStatusCheck;
 use Froshly\Parakit\DTOs\PaymentRequest;
 use Froshly\Parakit\DTOs\PaymentResponse;
+use Froshly\Parakit\Enums\Currency;
 use Froshly\Parakit\Enums\PaymentStatus;
 use Froshly\Parakit\Exceptions\GatewayUnavailableException;
 use Froshly\Parakit\Gateways\AbstractGateway;
 use Froshly\Parakit\Support\IdempotencyKey;
 use Froshly\Parakit\Support\Money;
 
-final class NassGateway extends AbstractGateway
+final class NassGateway extends AbstractGateway implements SupportsStatusCheck
 {
     private readonly NassClient $client;
 
@@ -76,6 +78,46 @@ final class NassGateway extends AbstractGateway
             redirectUrl: $url,
             raw: $raw,
         );
+    }
+
+    public function status(string $gatewayTransactionId): PaymentResponse
+    {
+        $raw = $this->client->checkStatus($gatewayTransactionId);
+        [$status, $currency, $amount] = $this->parseStatusData($raw);
+
+        return new PaymentResponse(
+            success: $status->isSuccessful() || $status === PaymentStatus::Pending,
+            gateway: $this->name(),
+            gatewayTransactionId: $gatewayTransactionId,
+            reference: '',
+            status: $status,
+            amount: $amount,
+            currency: $currency,
+            correlationId: $this->correlationId(),
+            raw: $raw,
+        );
+    }
+
+    /**
+     * Shared parser for a NassPay checkStatus body. Returns
+     * [PaymentStatus, Currency, amount-in-minor-units].
+     *
+     * @param array<string, mixed> $raw
+     * @return array{0: PaymentStatus, 1: Currency, 2: int}
+     */
+    private function parseStatusData(array $raw): array
+    {
+        $data = (array) ($raw['data'] ?? []);
+        $status = NassStatusMap::toStatus((string) ($data['responseCode'] ?? ''));
+        $currency = NassCurrencyMap::fromCode((string) ($data['currency'] ?? '368'))
+            ?? Currency::IQD;
+
+        $rawAmount = (string) ($data['amount'] ?? '0');
+        $amount = preg_match('/^\d+(\.\d+)?$/', $rawAmount) === 1
+            ? Money::parse($rawAmount, $currency)
+            : 0;
+
+        return [$status, $currency, $amount];
     }
 
     public function handleWebhook(\Illuminate\Http\Request $request): \Froshly\Parakit\DTOs\WebhookPayload
