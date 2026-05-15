@@ -867,11 +867,11 @@ Filament package. Multi-merchant credential resolver. Docs site live in three la
 
 ### v1.0 (stable)
 
-After 5+ production users report 30 days of clean operation. Lock public API. Tokenization where supported. Circuit breaker + retry primitives hardened. OpenTelemetry exporter optional.
+Lock public API. Circuit breaker + retry primitives hardened. OpenTelemetry exporter optional.
 
 ### v1.1+
 
-Qi Card, AsiaHawala, and other emerging Iraqi gateways. Subscription helpers. Advanced reconciliation (if gateway APIs expand). Dashboard analytics package.
+Qi Card, AsiaHawala, and other emerging Iraqi gateways. Subscription helpers. Advanced reconciliation (if gateway APIs expand).
 
 ---
 

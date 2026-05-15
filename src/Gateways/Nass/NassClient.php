@@ -58,7 +58,10 @@ final class NassClient
         // success:false are deterministic — throw a non-retryable
         // PaymentException so the retry loop never double-creates a txn.
         if (!$response->successful() || ($json['success'] ?? true) === false) {
-            $message = $json['data']['message'] ?? "HTTP {$response->status()}";
+            $data = (array) ($json['data'] ?? []);
+            $message = is_string($data['message'] ?? null)
+                ? $data['message']
+                : "HTTP {$response->status()}";
             throw new PaymentException("NassPay {$uri} rejected: {$message}");
         }
 

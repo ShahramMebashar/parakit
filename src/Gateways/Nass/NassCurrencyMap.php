@@ -13,6 +13,12 @@ final class NassCurrencyMap
         'USD' => '840',
     ];
 
+    /** ISO 4217 numeric code => Currency enum value (inverse of TO_CODE). */
+    private const FROM_CODE = [
+        '368' => 'IQD',
+        '840' => 'USD',
+    ];
+
     public static function toCode(Currency $currency): string
     {
         // Every Currency enum case has an entry in TO_CODE.
@@ -21,7 +27,8 @@ final class NassCurrencyMap
 
     public static function fromCode(string $code): ?Currency
     {
-        $flipped = array_flip(self::TO_CODE);
-        return isset($flipped[$code]) ? Currency::from($flipped[$code]) : null;
+        return isset(self::FROM_CODE[$code])
+            ? Currency::from(self::FROM_CODE[$code])
+            : null;
     }
 }

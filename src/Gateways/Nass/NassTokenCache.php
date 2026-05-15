@@ -10,6 +10,8 @@ use Froshly\Parakit\Exceptions\PaymentException;
 
 final class NassTokenCache
 {
+    private const SAFETY_MARGIN = 60;
+
     private readonly string $cacheKey;
 
     public function __construct(
@@ -70,7 +72,12 @@ final class NassTokenCache
             throw new PaymentException('NassPay login returned no access_token');
         }
 
-        Cache::put($this->cacheKey, $token, $this->ttl);
+        // Expire the cached token shortly before NassPay would, mirroring
+        // FibTokenCache: this avoids a race where a cached-but-just-expired
+        // token is used. 30s minimum keeps a burst-protection window even if
+        // a very short TTL is configured.
+        $ttl = max(30, $this->ttl - self::SAFETY_MARGIN);
+        Cache::put($this->cacheKey, $token, $ttl);
         return $token;
     }
 }
