@@ -50,6 +50,11 @@ final class FibGateway extends AbstractGateway implements SupportsCancel, Suppor
             'callback' => $request->callbackUrl ?? (string) ($this->config['callback_url'] ?? ''),
         ];
 
+        // In-FIB-app redirect after the user completes or cancels the payment.
+        if ($request->returnUrl !== null && $request->returnUrl !== '') {
+            $params['redirectUri'] = $request->returnUrl;
+        }
+
         // ISO-8601 durations (e.g. P7D, PT12H) controlling how long the payment
         // stays payable / refundable. Per-request metadata overrides config;
         // the key is omitted entirely when neither is set.
@@ -60,6 +65,13 @@ final class FibGateway extends AbstractGateway implements SupportsCancel, Suppor
         $expiresIn = $request->metadata['expires_in'] ?? $this->config['expires_in'] ?? null;
         if ($expiresIn !== null && $expiresIn !== '') {
             $params['expiresIn'] = (string) $expiresIn;
+        }
+
+        // FIB transaction category (ERP, POS, ECOMMERCE, ...); defaults to
+        // UNKNOWN at FIB when omitted.
+        $category = $request->metadata['category'] ?? $this->config['category'] ?? null;
+        if ($category !== null && $category !== '') {
+            $params['category'] = (string) $category;
         }
 
         $raw = $this->client->createCharge($params);

@@ -26,13 +26,16 @@ final class FibClient
                 'amount' => (string) $params['amount'],
                 'currency' => $params['currency'],
             ],
-            'description' => (string) ($params['description'] ?? ''),
+            // FIB caps the description at 50 characters and rejects the whole
+            // request if it overflows — truncate rather than fail the charge.
+            'description' => mb_substr((string) ($params['description'] ?? ''), 0, 50),
             // FIB's create-payment field is `statusCallbackUrl` — the webhook
             // URL FIB POSTs to on status changes.
             'statusCallbackUrl' => (string) ($params['callback'] ?? ''),
         ];
-        foreach (['statementDate', 'expiresIn', 'refundableFor', 'refusalDescription'] as $opt) {
-            if (isset($params[$opt])) {
+        // Optional create-payment fields, sent only when supplied.
+        foreach (['redirectUri', 'expiresIn', 'refundableFor', 'category'] as $opt) {
+            if (isset($params[$opt]) && $params[$opt] !== '') {
                 $payload[$opt] = $params[$opt];
             }
         }

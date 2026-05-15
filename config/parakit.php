@@ -39,6 +39,7 @@ return [
             'currency' => env('FIB_CURRENCY', 'IQD'),
             'refundable_for' => env('FIB_REFUNDABLE_FOR', 'P7D'),
             'expires_in' => env('FIB_EXPIRES_IN'),
+            'category' => env('FIB_CATEGORY'),
             'callback_url' => env('FIB_CALLBACK_URL'),
         ],
         'zaincash' => [

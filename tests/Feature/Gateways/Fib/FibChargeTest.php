@@ -54,7 +54,7 @@ it('charges via FIB and returns QR/deep-link/readable code', function () {
         && $req['statusCallbackUrl'] === 'https://app.test/cb');
 });
 
-it('sends refundableFor and expiresIn, with metadata overriding config', function () {
+it('sends optional charge fields, with metadata overriding config', function () {
     Http::fake([
         '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 60]),
         '*/protected/v1/payments' => Http::response(['paymentId' => 'pid_dur'], 200),
@@ -62,17 +62,38 @@ it('sends refundableFor and expiresIn, with metadata overriding config', functio
 
     config()->set('parakit.gateways.fib.refundable_for', 'P7D');
     config()->set('parakit.gateways.fib.expires_in', 'PT1H');
+    config()->set('parakit.gateways.fib.category', 'ECOMMERCE');
 
     Payment::driver('fib')->charge(new PaymentRequest(
         reference: 'ord_dur', amount: 5000, currency: Currency::IQD, description: 'd',
+        returnUrl: 'fibapp://done',
         metadata: ['expires_in' => 'PT30M'],
     ));
 
-    // refundableFor falls back to config; expiresIn is overridden by metadata.
+    // refundableFor/category fall back to config; expiresIn is overridden by
+    // metadata; redirectUri comes from the request returnUrl.
     Http::assertSent(fn ($req) =>
         str_contains($req->url(), '/protected/v1/payments')
         && $req['refundableFor'] === 'P7D'
-        && $req['expiresIn'] === 'PT30M');
+        && $req['expiresIn'] === 'PT30M'
+        && $req['category'] === 'ECOMMERCE'
+        && $req['redirectUri'] === 'fibapp://done');
+});
+
+it('truncates the description to FIB\'s 50-character limit', function () {
+    Http::fake([
+        '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 60]),
+        '*/protected/v1/payments' => Http::response(['paymentId' => 'pid_desc'], 200),
+    ]);
+
+    Payment::driver('fib')->charge(new PaymentRequest(
+        reference: 'ord_desc', amount: 5000, currency: Currency::IQD,
+        description: str_repeat('x', 80),
+    ));
+
+    Http::assertSent(fn ($req) =>
+        str_contains($req->url(), '/protected/v1/payments')
+        && strlen($req['description']) === 50);
 });
 
 it('converts minor units to major-unit decimal when charging in USD', function () {
