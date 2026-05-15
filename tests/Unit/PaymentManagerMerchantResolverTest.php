@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-use Shah\Parakit\PaymentManager;
-use Shah\Parakit\Contracts\PaymentGateway;
-use Shah\Parakit\DTOs\PaymentResponse;
-use Shah\Parakit\DTOs\WebhookPayload;
-use Shah\Parakit\Exceptions\UnsupportedGatewayException;
+use Gutian\Parakit\PaymentManager;
+use Gutian\Parakit\Contracts\PaymentGateway;
+use Gutian\Parakit\DTOs\PaymentResponse;
+use Gutian\Parakit\DTOs\WebhookPayload;
+use Gutian\Parakit\Exceptions\UnsupportedGatewayException;
 
 function makeStubGateway(string $label = 'stub'): PaymentGateway
 {

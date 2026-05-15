@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\DTOs;
+namespace Gutian\Parakit\DTOs;
 
 use DateTimeImmutable;
-use Shah\Parakit\Enums\Currency;
-use Shah\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\Enums\Currency;
+use Gutian\Parakit\Enums\PaymentStatus;
 
 final readonly class PaymentResponse
 {

@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-use Shah\Parakit\Gateways\Fib\FibErrorMap;
-use Shah\Parakit\Gateways\Fib\FibStatusMap;
-use Shah\Parakit\Enums\PaymentErrorCode;
-use Shah\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\Gateways\Fib\FibErrorMap;
+use Gutian\Parakit\Gateways\Fib\FibStatusMap;
+use Gutian\Parakit\Enums\PaymentErrorCode;
+use Gutian\Parakit\Enums\PaymentStatus;
 
 it('maps known FIB statuses to PaymentStatus', function () {
     expect(FibStatusMap::toStatus('UNPAID'))->toBe(PaymentStatus::Pending)

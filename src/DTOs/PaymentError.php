@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\DTOs;
+namespace Gutian\Parakit\DTOs;
 
-use Shah\Parakit\Enums\PaymentErrorCode;
+use Gutian\Parakit\Enums\PaymentErrorCode;
 
 final readonly class PaymentError
 {

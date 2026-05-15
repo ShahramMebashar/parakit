@@ -2,8 +2,8 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
-use Shah\Parakit\Http\Controllers\WebhookController;
-use Shah\Parakit\Http\Middleware\AssignCorrelationId;
+use Gutian\Parakit\Http\Controllers\WebhookController;
+use Gutian\Parakit\Http\Middleware\AssignCorrelationId;
 
 Route::middleware(array_merge(
     (array) config('parakit.webhooks.middleware', ['api']),

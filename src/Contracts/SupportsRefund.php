@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Contracts;
+namespace Gutian\Parakit\Contracts;
 
-use Shah\Parakit\DTOs\RefundRequest;
-use Shah\Parakit\DTOs\RefundResponse;
+use Gutian\Parakit\DTOs\RefundRequest;
+use Gutian\Parakit\DTOs\RefundResponse;
 
 interface SupportsRefund
 {

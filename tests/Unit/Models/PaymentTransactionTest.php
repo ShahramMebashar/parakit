@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-use Shah\Parakit\Models\PaymentTransaction;
-use Shah\Parakit\Enums\PaymentStatus;
-use Shah\Parakit\Enums\Currency;
+use Gutian\Parakit\Models\PaymentTransaction;
+use Gutian\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\Enums\Currency;
 
 beforeEach(fn () => $this->artisan('migrate'));
 
@@ -31,7 +31,7 @@ it('transitions status via state machine helper and rejects illegal transitions'
     expect($tx->refresh()->status)->toBe(PaymentStatus::Refunded);
 
     expect(fn () => $tx->transitionTo(PaymentStatus::Pending))
-        ->toThrow(\Shah\Parakit\Exceptions\IllegalStateTransitionException::class);
+        ->toThrow(\Gutian\Parakit\Exceptions\IllegalStateTransitionException::class);
 });
 
 it('reports a no-op same-status transition as success without re-saving', function () {

@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
 
-use Shah\Parakit\Contracts\PaymentGateway;
-use Shah\Parakit\Contracts\SupportsRefund;
-use Shah\Parakit\Contracts\SupportsTokenization;
-use Shah\Parakit\Contracts\SupportsStatusCheck;
-use Shah\Parakit\Exceptions\PaymentException;
-use Shah\Parakit\Exceptions\GatewayUnavailableException;
-use Shah\Parakit\Exceptions\InvalidWebhookSignatureException;
-use Shah\Parakit\Exceptions\DuplicateWebhookException;
-use Shah\Parakit\Exceptions\UnsupportedGatewayException;
-use Shah\Parakit\Exceptions\IllegalStateTransitionException;
+use Gutian\Parakit\Contracts\PaymentGateway;
+use Gutian\Parakit\Contracts\SupportsRefund;
+use Gutian\Parakit\Contracts\SupportsTokenization;
+use Gutian\Parakit\Contracts\SupportsStatusCheck;
+use Gutian\Parakit\Exceptions\PaymentException;
+use Gutian\Parakit\Exceptions\GatewayUnavailableException;
+use Gutian\Parakit\Exceptions\InvalidWebhookSignatureException;
+use Gutian\Parakit\Exceptions\DuplicateWebhookException;
+use Gutian\Parakit\Exceptions\UnsupportedGatewayException;
+use Gutian\Parakit\Exceptions\IllegalStateTransitionException;
 
 it('declares the four capability contracts', function () {
     expect(interface_exists(PaymentGateway::class))->toBeTrue()

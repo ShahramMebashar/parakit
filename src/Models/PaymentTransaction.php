@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Models;
+namespace Gutian\Parakit\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
-use Shah\Parakit\Enums\Currency;
-use Shah\Parakit\Enums\PaymentStatus;
-use Shah\Parakit\Exceptions\IllegalStateTransitionException;
+use Gutian\Parakit\Enums\Currency;
+use Gutian\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\Exceptions\IllegalStateTransitionException;
 
 class PaymentTransaction extends Model
 {

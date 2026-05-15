@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use Shah\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\Enums\PaymentStatus;
 
 it('classifies terminal states', function () {
     expect(PaymentStatus::Paid->isTerminal())->toBeTrue()

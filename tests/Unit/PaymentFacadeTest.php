@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-use Shah\Parakit\Facades\Payment;
-use Shah\Parakit\Contracts\PaymentGateway;
+use Gutian\Parakit\Facades\Payment;
+use Gutian\Parakit\Contracts\PaymentGateway;
 
 it('forwards resolveMerchantUsing through the facade', function () {
     $resolved = false;
@@ -11,8 +11,8 @@ it('forwards resolveMerchantUsing through the facade', function () {
         return ['driver' => 'stub'];
     });
     app('parakit.manager')->extend('stub', fn () => new class implements PaymentGateway {
-        public function charge($r): \Shah\Parakit\DTOs\PaymentResponse { throw new RuntimeException('nope'); }
-        public function handleWebhook(\Illuminate\Http\Request $r): \Shah\Parakit\DTOs\WebhookPayload { throw new RuntimeException('nope'); }
+        public function charge($r): \Gutian\Parakit\DTOs\PaymentResponse { throw new RuntimeException('nope'); }
+        public function handleWebhook(\Illuminate\Http\Request $r): \Gutian\Parakit\DTOs\WebhookPayload { throw new RuntimeException('nope'); }
         public function name(): string { return 'stub'; }
     });
 
@@ -24,8 +24,8 @@ it('forwards resolveMerchantUsing through the facade', function () {
 it('resolves the manager via the facade and returns the right driver', function () {
     config()->set('parakit.gateways.stub', ['driver' => 'stub']);
     app('parakit.manager')->extend('stub', fn () => new class implements PaymentGateway {
-        public function charge($r): \Shah\Parakit\DTOs\PaymentResponse { throw new RuntimeException('nope'); }
-        public function handleWebhook(\Illuminate\Http\Request $r): \Shah\Parakit\DTOs\WebhookPayload { throw new RuntimeException('nope'); }
+        public function charge($r): \Gutian\Parakit\DTOs\PaymentResponse { throw new RuntimeException('nope'); }
+        public function handleWebhook(\Illuminate\Http\Request $r): \Gutian\Parakit\DTOs\WebhookPayload { throw new RuntimeException('nope'); }
         public function name(): string { return 'stub'; }
     });
 

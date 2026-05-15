@@ -1,23 +1,23 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Gateways\Fib;
+namespace Gutian\Parakit\Gateways\Fib;
 
 use DateTimeImmutable;
 use Illuminate\Http\Request;
-use Shah\Parakit\Contracts\SupportsRefund;
-use Shah\Parakit\Contracts\SupportsStatusCheck;
-use Shah\Parakit\DTOs\PaymentRequest;
-use Shah\Parakit\DTOs\PaymentResponse;
-use Shah\Parakit\DTOs\RefundRequest;
-use Shah\Parakit\DTOs\RefundResponse;
-use Shah\Parakit\DTOs\WebhookPayload;
-use Shah\Parakit\Enums\Currency;
-use Shah\Parakit\Enums\PaymentStatus;
-use Shah\Parakit\Exceptions\GatewayUnavailableException;
-use Shah\Parakit\Exceptions\InvalidWebhookSignatureException;
-use Shah\Parakit\Gateways\AbstractGateway;
-use Shah\Parakit\Support\Money;
+use Gutian\Parakit\Contracts\SupportsRefund;
+use Gutian\Parakit\Contracts\SupportsStatusCheck;
+use Gutian\Parakit\DTOs\PaymentRequest;
+use Gutian\Parakit\DTOs\PaymentResponse;
+use Gutian\Parakit\DTOs\RefundRequest;
+use Gutian\Parakit\DTOs\RefundResponse;
+use Gutian\Parakit\DTOs\WebhookPayload;
+use Gutian\Parakit\Enums\Currency;
+use Gutian\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\Exceptions\GatewayUnavailableException;
+use Gutian\Parakit\Exceptions\InvalidWebhookSignatureException;
+use Gutian\Parakit\Gateways\AbstractGateway;
+use Gutian\Parakit\Support\Money;
 
 final class FibGateway extends AbstractGateway implements SupportsRefund, SupportsStatusCheck
 {

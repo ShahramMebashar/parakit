@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Console;
+namespace Gutian\Parakit\Console;
 
 use Illuminate\Console\Command;
-use Shah\Parakit\Models\PaymentLog;
+use Gutian\Parakit\Models\PaymentLog;
 
 class PruneLogsCommand extends Command
 {

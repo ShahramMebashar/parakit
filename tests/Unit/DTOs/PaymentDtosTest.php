@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-use Shah\Parakit\DTOs\PaymentRequest;
-use Shah\Parakit\DTOs\PaymentResponse;
-use Shah\Parakit\DTOs\PaymentError;
-use Shah\Parakit\Enums\Currency;
-use Shah\Parakit\Enums\PaymentErrorCode;
-use Shah\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\DTOs\PaymentRequest;
+use Gutian\Parakit\DTOs\PaymentResponse;
+use Gutian\Parakit\DTOs\PaymentError;
+use Gutian\Parakit\Enums\Currency;
+use Gutian\Parakit\Enums\PaymentErrorCode;
+use Gutian\Parakit\Enums\PaymentStatus;
 
 it('builds a payment request with minimal args', function () {
     $r = new PaymentRequest(

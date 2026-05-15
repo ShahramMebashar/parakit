@@ -59,8 +59,8 @@ Parakit is the default way to take payments from Iraqi and Kurdish customers in 
 
 | Field | Value |
 |---|---|
-| Composer name | `shah/parakit` |
-| Namespace | `Shah\Parakit` |
+| Composer name | `gutian/parakit` |
+| Namespace | `Gutian\Parakit` |
 | Facade | `Payment` (aliased) |
 | PHP | `^8.2` |
 | Laravel | `^11.0 \|\| ^12.0` |
@@ -87,7 +87,7 @@ Each driver lives in its own subfolder and can be swapped at runtime via config.
 ## Directory structure
 
 ```
-shah/parakit/
+gutian/parakit/
 ├── composer.json
 ├── README.md
 ├── CHANGELOG.md
@@ -262,9 +262,9 @@ Anyone can register a custom driver class via this config slot — the package d
 ## Public API
 
 ```php
-use Shah\Parakit\Facades\Payment;
-use Shah\Parakit\DTOs\PaymentRequest;
-use Shah\Parakit\Enums\Currency;
+use Gutian\Parakit\Facades\Payment;
+use Gutian\Parakit\DTOs\PaymentRequest;
+use Gutian\Parakit\Enums\Currency;
 
 // Default driver
 Payment::charge($request);
@@ -713,8 +713,8 @@ Built-in parsers for each gateway's CSV format; auto-detected by column signatur
 ## Testing utilities
 
 ```php
-use Shah\Parakit\Facades\Payment;
-use Shah\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\Facades\Payment;
+use Gutian\Parakit\Enums\PaymentStatus;
 
 Payment::fake();
 
@@ -789,7 +789,7 @@ Roadmap item — FIB and ZainCash both have recurring/tokenized flows on their r
 
 ## Filament integration
 
-Shipped as a separate package: `shah/parakit-filament`. Kept separate so non-Filament users don't pull the dependency.
+Shipped as a separate package: `gutian/parakit-filament`. Kept separate so non-Filament users don't pull the dependency.
 
 Provides:
 
@@ -800,7 +800,7 @@ Provides:
 Install:
 
 ```bash
-composer require shah/parakit-filament
+composer require gutian/parakit-filament
 php artisan parakit-filament:install
 ```
 

@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-use Shah\Parakit\Support\Money;
-use Shah\Parakit\Enums\Currency;
+use Gutian\Parakit\Support\Money;
+use Gutian\Parakit\Enums\Currency;
 
 it('formats minor units back to a decimal string per currency', function () {
     expect(Money::format(5000, Currency::IQD))->toBe('5000')

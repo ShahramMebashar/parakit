@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Enums;
+namespace Gutian\Parakit\Enums;
 
 enum PaymentErrorCode: string
 {

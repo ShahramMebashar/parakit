@@ -1,18 +1,18 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Console;
+namespace Gutian\Parakit\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Shah\Parakit\Contracts\SupportsStatusCheck;
-use Shah\Parakit\Enums\PaymentStatus;
-use Shah\Parakit\Events\PaymentCancelled;
-use Shah\Parakit\Events\PaymentFailed;
-use Shah\Parakit\Events\PaymentSucceeded;
-use Shah\Parakit\Exceptions\IllegalStateTransitionException;
-use Shah\Parakit\Models\PaymentTransaction;
-use Shah\Parakit\PaymentManager;
+use Gutian\Parakit\Contracts\SupportsStatusCheck;
+use Gutian\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\Events\PaymentCancelled;
+use Gutian\Parakit\Events\PaymentFailed;
+use Gutian\Parakit\Events\PaymentSucceeded;
+use Gutian\Parakit\Exceptions\IllegalStateTransitionException;
+use Gutian\Parakit\Models\PaymentTransaction;
+use Gutian\Parakit\PaymentManager;
 
 class SweepPendingCommand extends Command
 {

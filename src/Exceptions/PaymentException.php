@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Exceptions;
+namespace Gutian\Parakit\Exceptions;
 
 use RuntimeException;
 

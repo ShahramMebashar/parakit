@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Support;
+namespace Gutian\Parakit\Support;
 
 use InvalidArgumentException;
-use Shah\Parakit\Enums\Currency;
+use Gutian\Parakit\Enums\Currency;
 
 final class Money
 {

@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Gateways\ZainCash;
+namespace Gutian\Parakit\Gateways\ZainCash;
 
-use Shah\Parakit\Enums\PaymentErrorCode;
+use Gutian\Parakit\Enums\PaymentErrorCode;
 
 final class ZainCashErrorMap
 {

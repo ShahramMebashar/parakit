@@ -4,10 +4,10 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
-use Shah\Parakit\Models\PaymentTransaction;
-use Shah\Parakit\Enums\PaymentStatus;
-use Shah\Parakit\Enums\Currency;
-use Shah\Parakit\Events\PaymentSucceeded;
+use Gutian\Parakit\Models\PaymentTransaction;
+use Gutian\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\Enums\Currency;
+use Gutian\Parakit\Events\PaymentSucceeded;
 
 beforeEach(function () {
     Cache::flush();

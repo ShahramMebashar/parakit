@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Events;
+namespace Gutian\Parakit\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
-use Shah\Parakit\DTOs\WebhookPayload;
+use Gutian\Parakit\DTOs\WebhookPayload;
 
 class WebhookReceived
 {

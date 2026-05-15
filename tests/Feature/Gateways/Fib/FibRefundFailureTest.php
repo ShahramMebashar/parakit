@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Shah\Parakit\Facades\Payment;
-use Shah\Parakit\DTOs\RefundRequest;
-use Shah\Parakit\Exceptions\GatewayUnavailableException;
+use Gutian\Parakit\Facades\Payment;
+use Gutian\Parakit\DTOs\RefundRequest;
+use Gutian\Parakit\Exceptions\GatewayUnavailableException;
 
 beforeEach(function () {
     Cache::flush();

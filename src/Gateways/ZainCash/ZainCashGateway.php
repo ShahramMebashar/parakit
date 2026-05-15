@@ -1,20 +1,20 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Gateways\ZainCash;
+namespace Gutian\Parakit\Gateways\ZainCash;
 
 use DateTimeImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Shah\Parakit\Contracts\SupportsStatusCheck;
-use Shah\Parakit\DTOs\PaymentRequest;
-use Shah\Parakit\DTOs\PaymentResponse;
-use Shah\Parakit\DTOs\WebhookPayload;
-use Shah\Parakit\Enums\Currency;
-use Shah\Parakit\Enums\PaymentStatus;
-use Shah\Parakit\Exceptions\GatewayUnavailableException;
-use Shah\Parakit\Exceptions\InvalidWebhookSignatureException;
-use Shah\Parakit\Gateways\AbstractGateway;
+use Gutian\Parakit\Contracts\SupportsStatusCheck;
+use Gutian\Parakit\DTOs\PaymentRequest;
+use Gutian\Parakit\DTOs\PaymentResponse;
+use Gutian\Parakit\DTOs\WebhookPayload;
+use Gutian\Parakit\Enums\Currency;
+use Gutian\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\Exceptions\GatewayUnavailableException;
+use Gutian\Parakit\Exceptions\InvalidWebhookSignatureException;
+use Gutian\Parakit\Gateways\AbstractGateway;
 
 final class ZainCashGateway extends AbstractGateway implements SupportsStatusCheck
 {

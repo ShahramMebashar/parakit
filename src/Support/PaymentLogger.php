@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Support;
+namespace Gutian\Parakit\Support;
 
-use Shah\Parakit\Models\PaymentLog;
+use Gutian\Parakit\Models\PaymentLog;
 
 final class PaymentLogger
 {

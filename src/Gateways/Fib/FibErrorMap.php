@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Gateways\Fib;
+namespace Gutian\Parakit\Gateways\Fib;
 
-use Shah\Parakit\Enums\PaymentErrorCode;
+use Gutian\Parakit\Enums\PaymentErrorCode;
 
 final class FibErrorMap
 {

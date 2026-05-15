@@ -1,5 +1,5 @@
 {
-  "name": "shah/parakit",
+  "name": "gutian/parakit",
   "description": "The payment kit for Kurdistan and Iraq — Laravel-native.",
   "type": "library",
   "license": "MIT",
@@ -19,15 +19,15 @@
     "larastan/larastan": "^3.0"
   },
   "autoload": {
-    "psr-4": { "Shah\\Parakit\\": "src/" }
+    "psr-4": { "Gutian\\Parakit\\": "src/" }
   },
   "autoload-dev": {
-    "psr-4": { "Shah\\Parakit\\Tests\\": "tests/" }
+    "psr-4": { "Gutian\\Parakit\\Tests\\": "tests/" }
   },
   "extra": {
     "laravel": {
-      "providers": ["Shah\\Parakit\\ParakitServiceProvider"],
-      "aliases": { "Payment": "Shah\\Parakit\\Facades\\Payment" }
+      "providers": ["Gutian\\Parakit\\ParakitServiceProvider"],
+      "aliases": { "Payment": "Gutian\\Parakit\\Facades\\Payment" }
     }
   },
   "scripts": {

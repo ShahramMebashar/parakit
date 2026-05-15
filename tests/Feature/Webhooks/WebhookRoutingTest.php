@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-use Shah\Parakit\Contracts\PaymentGateway;
-use Shah\Parakit\DTOs\WebhookPayload;
-use Shah\Parakit\Enums\PaymentStatus;
-use Shah\Parakit\Enums\Currency;
+use Gutian\Parakit\Contracts\PaymentGateway;
+use Gutian\Parakit\DTOs\WebhookPayload;
+use Gutian\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\Enums\Currency;
 
 beforeEach(function () {
     $this->artisan('migrate');
@@ -12,7 +12,7 @@ beforeEach(function () {
 
     app('parakit.manager')->extend('stub', function () {
         return new class implements PaymentGateway {
-            public function charge($r): \Shah\Parakit\DTOs\PaymentResponse { throw new RuntimeException('n/a'); }
+            public function charge($r): \Gutian\Parakit\DTOs\PaymentResponse { throw new RuntimeException('n/a'); }
             public function handleWebhook(\Illuminate\Http\Request $r): WebhookPayload {
                 return new WebhookPayload(
                     gateway: 'stub',
@@ -42,15 +42,15 @@ it('returns 404 for unknown gateway', function () {
 it('strips sensitive headers from WebhookVerificationFailed events', function () {
     app('parakit.manager')->flushResolved();
     config()->set('parakit.gateways.sigbad', ['driver' => 'sigbad']);
-    app('parakit.manager')->extend('sigbad', fn () => new class implements \Shah\Parakit\Contracts\PaymentGateway {
-        public function charge($r): \Shah\Parakit\DTOs\PaymentResponse { throw new RuntimeException('n/a'); }
-        public function handleWebhook(\Illuminate\Http\Request $r): \Shah\Parakit\DTOs\WebhookPayload {
-            throw new \Shah\Parakit\Exceptions\InvalidWebhookSignatureException('bad');
+    app('parakit.manager')->extend('sigbad', fn () => new class implements \Gutian\Parakit\Contracts\PaymentGateway {
+        public function charge($r): \Gutian\Parakit\DTOs\PaymentResponse { throw new RuntimeException('n/a'); }
+        public function handleWebhook(\Illuminate\Http\Request $r): \Gutian\Parakit\DTOs\WebhookPayload {
+            throw new \Gutian\Parakit\Exceptions\InvalidWebhookSignatureException('bad');
         }
         public function name(): string { return 'sigbad'; }
     });
 
-    \Illuminate\Support\Facades\Event::fake([\Shah\Parakit\Events\WebhookVerificationFailed::class]);
+    \Illuminate\Support\Facades\Event::fake([\Gutian\Parakit\Events\WebhookVerificationFailed::class]);
 
     $this->postJson('/payments/webhooks/sigbad', [], [
         'Authorization' => 'Bearer SUPER-SECRET',
@@ -59,7 +59,7 @@ it('strips sensitive headers from WebhookVerificationFailed events', function ()
     ])->assertStatus(401);
 
     \Illuminate\Support\Facades\Event::assertDispatched(
-        \Shah\Parakit\Events\WebhookVerificationFailed::class,
+        \Gutian\Parakit\Events\WebhookVerificationFailed::class,
         function ($e) {
             $flat = json_encode($e->headers);
             return !str_contains($flat, 'SUPER-SECRET')
@@ -72,9 +72,9 @@ it('strips sensitive headers from WebhookVerificationFailed events', function ()
 it('returns 500 (driver bug) when handleWebhook throws an unexpected exception', function () {
     app('parakit.manager')->flushResolved();
     config()->set('parakit.gateways.buggy', ['driver' => 'buggy']);
-    app('parakit.manager')->extend('buggy', fn () => new class implements \Shah\Parakit\Contracts\PaymentGateway {
-        public function charge($r): \Shah\Parakit\DTOs\PaymentResponse { throw new RuntimeException('n/a'); }
-        public function handleWebhook(\Illuminate\Http\Request $r): \Shah\Parakit\DTOs\WebhookPayload {
+    app('parakit.manager')->extend('buggy', fn () => new class implements \Gutian\Parakit\Contracts\PaymentGateway {
+        public function charge($r): \Gutian\Parakit\DTOs\PaymentResponse { throw new RuntimeException('n/a'); }
+        public function handleWebhook(\Illuminate\Http\Request $r): \Gutian\Parakit\DTOs\WebhookPayload {
             throw new \LogicException('driver bug');
         }
         public function name(): string { return 'buggy'; }

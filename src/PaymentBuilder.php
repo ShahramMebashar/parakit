@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit;
+namespace Gutian\Parakit;
 
 use InvalidArgumentException;
-use Shah\Parakit\DTOs\PaymentRequest;
-use Shah\Parakit\DTOs\PaymentResponse;
-use Shah\Parakit\Enums\Currency;
+use Gutian\Parakit\DTOs\PaymentRequest;
+use Gutian\Parakit\DTOs\PaymentResponse;
+use Gutian\Parakit\Enums\Currency;
 
 final class PaymentBuilder
 {

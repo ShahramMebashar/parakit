@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Shah\Parakit\Http\Middleware\AssignCorrelationId;
-use Shah\Parakit\Support\CorrelationId;
+use Gutian\Parakit\Http\Middleware\AssignCorrelationId;
+use Gutian\Parakit\Support\CorrelationId;
 
 beforeEach(fn () => CorrelationId::reset());
 

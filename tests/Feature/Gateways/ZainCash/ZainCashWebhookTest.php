@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-use Shah\Parakit\Gateways\ZainCash\ZainCashJwt;
-use Shah\Parakit\Models\PaymentTransaction;
-use Shah\Parakit\Enums\PaymentStatus;
-use Shah\Parakit\Enums\Currency;
+use Gutian\Parakit\Gateways\ZainCash\ZainCashJwt;
+use Gutian\Parakit\Models\PaymentTransaction;
+use Gutian\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\Enums\Currency;
 
 beforeEach(function () {
     $this->artisan('migrate');

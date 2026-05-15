@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Gateways\Fib;
+namespace Gutian\Parakit\Gateways\Fib;
 
 use Illuminate\Support\Facades\Log;
-use Shah\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\Enums\PaymentStatus;
 
 final class FibStatusMap
 {

@@ -2,7 +2,7 @@
 
 > پارەکیت — The payment kit for Kurdistan and Iraq, Laravel-native.
 
-[![CI](https://github.com/shah/parakit/actions/workflows/ci.yml/badge.svg)](https://github.com/shah/parakit/actions/workflows/ci.yml)
+[![CI](https://github.com/ShahramMebashar/parakit/actions/workflows/ci.yml/badge.svg)](https://github.com/ShahramMebashar/parakit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Take payments from Iraqi and Kurdish customers in a Laravel app — **FIB**, **ZainCash** — with idempotent webhooks, retry & circuit-breaker, redacted logging, a sweeper for lost webhooks, and three localised UIs (en/ar/ckb) out of the box.
@@ -30,7 +30,7 @@ Take payments from Iraqi and Kurdish customers in a Laravel app — **FIB**, **Z
 ## Install
 
 ```bash
-composer require shah/parakit
+composer require gutian/parakit
 php artisan parakit:install
 ```
 
@@ -39,7 +39,7 @@ php artisan parakit:install
 >
 > ```json
 > "repositories": [
->   { "type": "vcs", "url": "https://github.com/shah/parakit" }
+>   { "type": "vcs", "url": "https://github.com/ShahramMebashar/parakit" }
 > ]
 > ```
 
@@ -74,8 +74,8 @@ php artisan parakit:test-charge fib --amount=1000
 ### Fluent builder (recommended)
 
 ```php
-use Shah\Parakit\Facades\Payment;
-use Shah\Parakit\Enums\Currency;
+use Gutian\Parakit\Facades\Payment;
+use Gutian\Parakit\Enums\Currency;
 
 $response = Payment::for($order)
     ->driver('fib')
@@ -99,7 +99,7 @@ return view('checkout.fib', [
 ### Explicit DTO
 
 ```php
-use Shah\Parakit\DTOs\PaymentRequest;
+use Gutian\Parakit\DTOs\PaymentRequest;
 
 $response = Payment::driver('zaincash')->charge(new PaymentRequest(
     reference: $order->id,
@@ -118,7 +118,7 @@ return redirect()->away($response->redirectUrl);
 Parakit registers `POST /payments/webhooks/{gateway}` automatically. Listen for lifecycle events anywhere in your app:
 
 ```php
-use Shah\Parakit\Events\PaymentSucceeded;
+use Gutian\Parakit\Events\PaymentSucceeded;
 
 Event::listen(PaymentSucceeded::class, function ($event) {
     Order::find($event->transaction->reference)->markPaid();
@@ -212,7 +212,7 @@ When merchants self-onboard and their credentials live in your database — not 
 
 ```php
 // app/Providers/AppServiceProvider.php — boot()
-use Shah\Parakit\Facades\Payment;
+use Gutian\Parakit\Facades\Payment;
 
 Payment::resolveMerchantUsing(function (string $gateway): array {
     $merchant = app(TenantManager::class)->current();

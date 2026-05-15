@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-use Shah\Parakit\DTOs\WebhookPayload;
-use Shah\Parakit\DTOs\RefundRequest;
-use Shah\Parakit\DTOs\RefundResponse;
-use Shah\Parakit\Enums\Currency;
-use Shah\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\DTOs\WebhookPayload;
+use Gutian\Parakit\DTOs\RefundRequest;
+use Gutian\Parakit\DTOs\RefundResponse;
+use Gutian\Parakit\Enums\Currency;
+use Gutian\Parakit\Enums\PaymentStatus;
 
 it('builds a webhook payload', function () {
     $p = new WebhookPayload(

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use Shah\Parakit\Support\CircuitBreaker;
+use Gutian\Parakit\Support\CircuitBreaker;
 
 beforeEach(fn () => cache()->flush());
 

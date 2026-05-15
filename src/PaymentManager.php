@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit;
+namespace Gutian\Parakit;
 
 use Closure;
 use Illuminate\Contracts\Container\Container;
-use Shah\Parakit\Contracts\PaymentGateway;
-use Shah\Parakit\Exceptions\UnsupportedGatewayException;
-use Shah\Parakit\Gateways\Fib\FibGateway;
-use Shah\Parakit\Gateways\ZainCash\ZainCashGateway;
+use Gutian\Parakit\Contracts\PaymentGateway;
+use Gutian\Parakit\Exceptions\UnsupportedGatewayException;
+use Gutian\Parakit\Gateways\Fib\FibGateway;
+use Gutian\Parakit\Gateways\ZainCash\ZainCashGateway;
 
 class PaymentManager
 {

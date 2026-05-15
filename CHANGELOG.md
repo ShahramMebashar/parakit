@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `shah/parakit` are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
+All notable changes to `gutian/parakit` are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 

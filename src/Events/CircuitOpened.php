@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Events;
+namespace Gutian\Parakit\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 

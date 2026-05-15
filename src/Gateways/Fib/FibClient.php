@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Gateways\Fib;
+namespace Gutian\Parakit\Gateways\Fib;
 
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
-use Shah\Parakit\Exceptions\GatewayUnavailableException;
+use Gutian\Parakit\Exceptions\GatewayUnavailableException;
 
 final class FibClient
 {

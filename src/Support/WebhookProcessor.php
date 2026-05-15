@@ -1,22 +1,22 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Support;
+namespace Gutian\Parakit\Support;
 
 use DateTimeImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Shah\Parakit\DTOs\WebhookPayload;
-use Shah\Parakit\Enums\PaymentStatus;
-use Shah\Parakit\Events\PaymentCancelled;
-use Shah\Parakit\Events\PaymentFailed;
-use Shah\Parakit\Events\PaymentRefunded;
-use Shah\Parakit\Events\PaymentSucceeded;
-use Shah\Parakit\Exceptions\DuplicateWebhookException;
-use Shah\Parakit\Exceptions\IllegalStateTransitionException;
-use Shah\Parakit\Models\PaymentTransaction;
-use Shah\Parakit\Models\PaymentWebhookEvent;
+use Gutian\Parakit\DTOs\WebhookPayload;
+use Gutian\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\Events\PaymentCancelled;
+use Gutian\Parakit\Events\PaymentFailed;
+use Gutian\Parakit\Events\PaymentRefunded;
+use Gutian\Parakit\Events\PaymentSucceeded;
+use Gutian\Parakit\Exceptions\DuplicateWebhookException;
+use Gutian\Parakit\Exceptions\IllegalStateTransitionException;
+use Gutian\Parakit\Models\PaymentTransaction;
+use Gutian\Parakit\Models\PaymentWebhookEvent;
 
 final class WebhookProcessor
 {

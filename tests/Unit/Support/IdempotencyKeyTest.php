@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use Shah\Parakit\Support\IdempotencyKey;
+use Gutian\Parakit\Support\IdempotencyKey;
 
 it('hashes deterministically and is collision-resistant', function () {
     $a = IdempotencyKey::derive('fib', 'ord_1', 5000, 'IQD');

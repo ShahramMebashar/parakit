@@ -1,18 +1,18 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Http\Controllers;
+namespace Gutian\Parakit\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
-use Shah\Parakit\Events\WebhookReceived;
-use Shah\Parakit\Events\WebhookVerificationFailed;
-use Shah\Parakit\Exceptions\DuplicateWebhookException;
-use Shah\Parakit\Exceptions\InvalidWebhookSignatureException;
-use Shah\Parakit\Exceptions\UnsupportedGatewayException;
-use Shah\Parakit\PaymentManager;
-use Shah\Parakit\Support\WebhookProcessor;
+use Gutian\Parakit\Events\WebhookReceived;
+use Gutian\Parakit\Events\WebhookVerificationFailed;
+use Gutian\Parakit\Exceptions\DuplicateWebhookException;
+use Gutian\Parakit\Exceptions\InvalidWebhookSignatureException;
+use Gutian\Parakit\Exceptions\UnsupportedGatewayException;
+use Gutian\Parakit\PaymentManager;
+use Gutian\Parakit\Support\WebhookProcessor;
 
 class WebhookController
 {

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Cache;
 
 beforeEach(function () {
     Cache::flush();
+    $this->artisan('migrate');
     config()->set('parakit.gateways.fib', [
         'driver' => 'fib',
         'base_url' => 'https://fib.stage.fib.iq',

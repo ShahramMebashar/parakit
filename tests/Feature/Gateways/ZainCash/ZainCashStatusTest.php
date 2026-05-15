@@ -2,9 +2,9 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use Shah\Parakit\Facades\Payment;
-use Shah\Parakit\Contracts\SupportsStatusCheck;
-use Shah\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\Facades\Payment;
+use Gutian\Parakit\Contracts\SupportsStatusCheck;
+use Gutian\Parakit\Enums\PaymentStatus;
 
 beforeEach(function () {
     config()->set('parakit.gateways.zaincash', [

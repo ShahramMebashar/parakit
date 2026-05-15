@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Support;
+namespace Gutian\Parakit\Support;
 
 use Illuminate\Support\Facades\Cache;
 

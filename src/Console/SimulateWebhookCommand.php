@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Console;
+namespace Gutian\Parakit\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
-use Shah\Parakit\Gateways\ZainCash\ZainCashJwt;
+use Gutian\Parakit\Gateways\ZainCash\ZainCashJwt;
 
 class SimulateWebhookCommand extends Command
 {

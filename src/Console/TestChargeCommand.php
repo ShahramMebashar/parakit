@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Console;
+namespace Gutian\Parakit\Console;
 
 use Illuminate\Console\Command;
-use Shah\Parakit\DTOs\PaymentRequest;
-use Shah\Parakit\Enums\Currency;
-use Shah\Parakit\PaymentManager;
+use Gutian\Parakit\DTOs\PaymentRequest;
+use Gutian\Parakit\Enums\Currency;
+use Gutian\Parakit\PaymentManager;
 
 class TestChargeCommand extends Command
 {

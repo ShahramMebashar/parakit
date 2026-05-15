@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Tests;
+namespace Gutian\Parakit\Tests;
 
 use Orchestra\Testbench\TestCase as Orchestra;
-use Shah\Parakit\ParakitServiceProvider;
+use Gutian\Parakit\ParakitServiceProvider;
 
 abstract class TestCase extends Orchestra
 {

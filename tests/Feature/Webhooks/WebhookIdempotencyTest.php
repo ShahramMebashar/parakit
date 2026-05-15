@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-use Shah\Parakit\Models\PaymentTransaction;
-use Shah\Parakit\Models\PaymentWebhookEvent;
-use Shah\Parakit\Enums\PaymentStatus;
-use Shah\Parakit\Enums\Currency;
-use Shah\Parakit\Contracts\PaymentGateway;
-use Shah\Parakit\DTOs\WebhookPayload;
+use Gutian\Parakit\Models\PaymentTransaction;
+use Gutian\Parakit\Models\PaymentWebhookEvent;
+use Gutian\Parakit\Enums\PaymentStatus;
+use Gutian\Parakit\Enums\Currency;
+use Gutian\Parakit\Contracts\PaymentGateway;
+use Gutian\Parakit\DTOs\WebhookPayload;
 use Illuminate\Support\Facades\Event;
-use Shah\Parakit\Events\PaymentSucceeded;
-use Shah\Parakit\Events\WebhookReceived;
+use Gutian\Parakit\Events\PaymentSucceeded;
+use Gutian\Parakit\Events\WebhookReceived;
 
 beforeEach(function () {
     $this->artisan('migrate');
@@ -27,7 +27,7 @@ function registerStubDriver(string $eventId, PaymentStatus $status, DateTimeImmu
                 private PaymentStatus $status,
                 private DateTimeImmutable $occurredAt,
             ) {}
-            public function charge($r): \Shah\Parakit\DTOs\PaymentResponse { throw new RuntimeException('n/a'); }
+            public function charge($r): \Gutian\Parakit\DTOs\PaymentResponse { throw new RuntimeException('n/a'); }
             public function handleWebhook(\Illuminate\Http\Request $r): WebhookPayload {
                 return new WebhookPayload(
                     gateway: 'stub', gatewayTransactionId: 'gw_1', reference: 'ord_1',

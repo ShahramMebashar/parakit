@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use Shah\Parakit\Support\PayloadRedactor;
+use Gutian\Parakit\Support\PayloadRedactor;
 
 it('redacts configured key names recursively', function () {
     $r = new PayloadRedactor(['password', 'secret', 'token']);

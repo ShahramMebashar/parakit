@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\Contracts;
+namespace Gutian\Parakit\Contracts;
 
-use Shah\Parakit\DTOs\PaymentRequest;
-use Shah\Parakit\DTOs\PaymentResponse;
-use Shah\Parakit\Enums\Currency;
+use Gutian\Parakit\DTOs\PaymentRequest;
+use Gutian\Parakit\DTOs\PaymentResponse;
+use Gutian\Parakit\Enums\Currency;
 
 interface SupportsTokenization
 {

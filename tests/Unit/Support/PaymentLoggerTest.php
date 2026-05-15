@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-use Shah\Parakit\Models\PaymentLog;
-use Shah\Parakit\Support\PaymentLogger;
+use Gutian\Parakit\Models\PaymentLog;
+use Gutian\Parakit\Support\PaymentLogger;
 
 beforeEach(fn () => $this->artisan('migrate'));
 

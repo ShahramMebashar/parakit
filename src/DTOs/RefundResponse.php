@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Shah\Parakit\DTOs;
+namespace Gutian\Parakit\DTOs;
 
 final readonly class RefundResponse
 {
