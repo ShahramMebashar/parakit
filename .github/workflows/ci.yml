@@ -1,0 +1,26 @@
+name: CI
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2', '8.3']
+        laravel: ['11.*', '12.*']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: xdebug
+      - run: composer require "laravel/framework:${{ matrix.laravel }}" --no-update
+      - run: composer update --prefer-dist --no-progress
+      - name: security audit
+        run: composer audit --no-dev --abandoned=ignore
+      - run: vendor/bin/pest --coverage --min=80
+      - run: vendor/bin/phpstan analyse
+      - name: forbid stray debug calls
+        run: |
+          ! grep -rnE '\b(dd|var_dump)\(' src tests

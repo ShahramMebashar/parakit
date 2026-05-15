@@ -1,0 +1,12 @@
+includes:
+  - vendor/larastan/larastan/extension.neon
+
+parameters:
+  level: 6
+  paths:
+    - src
+  ignoreErrors:
+    # PHPDoc array generics (array<string, mixed>) — strict-types and runtime
+    # validation already guard these boundaries; the docblock requirement is
+    # a v0.2 polish item, not a v0.1 blocker.
+    - identifier: missingType.iterableValue

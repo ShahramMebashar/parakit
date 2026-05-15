@@ -1,0 +1,5 @@
+{
+  "paymentId": "f1f9d4c7-7c4f-4dc5-92c0-1234567890ab",
+  "status": "PAID",
+  "amount": { "amount": "5000", "currency": "IQD" }
+}

@@ -1,0 +1,16 @@
+<?php
+declare(strict_types=1);
+
+use Shah\Parakit\Facades\Payment;
+use Shah\Parakit\Contracts\PaymentGateway;
+
+it('resolves the manager via the facade and returns the right driver', function () {
+    config()->set('parakit.gateways.stub', ['driver' => 'stub']);
+    app('parakit.manager')->extend('stub', fn () => new class implements PaymentGateway {
+        public function charge($r): \Shah\Parakit\DTOs\PaymentResponse { throw new RuntimeException('nope'); }
+        public function handleWebhook(\Illuminate\Http\Request $r): \Shah\Parakit\DTOs\WebhookPayload { throw new RuntimeException('nope'); }
+        public function name(): string { return 'stub'; }
+    });
+
+    expect(Payment::driver('stub')->name())->toBe('stub');
+});

@@ -1,0 +1,7 @@
+{
+  "paymentId": "f1f9d4c7-7c4f-4dc5-92c0-1234567890ab",
+  "readableCode": "AB12-CD34",
+  "personalAppLink": "fib://pay?id=...",
+  "qrCode": "data:image/png;base64,iVBORw0KGgo=",
+  "validUntil": "2026-05-14T11:00:00Z"
+}
