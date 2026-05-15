@@ -54,5 +54,15 @@ return [
             'success_url'   => env('ZAINCASH_SUCCESS_URL'),
             'failure_url'   => env('ZAINCASH_FAILURE_URL'),
         ],
+        'nass' => [
+            'driver'           => 'nass',
+            'base_url'         => env('NASS_BASE_URL', 'https://uat-gateway.nass.iq:9746'),
+            'username'         => env('NASS_USERNAME'),
+            'password'         => env('NASS_PASSWORD'),
+            'token_ttl'        => (int) env('NASS_TOKEN_TTL', 3000),
+            'transaction_type' => (int) env('NASS_TRANSACTION_TYPE', 1),
+            'callback_url'     => env('NASS_CALLBACK_URL'),
+            'return_url'       => env('NASS_RETURN_URL'),
+        ],
     ],
 ];
