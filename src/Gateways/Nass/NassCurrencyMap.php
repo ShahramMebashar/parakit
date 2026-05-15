@@ -15,7 +15,8 @@ final class NassCurrencyMap
 
     public static function toCode(Currency $currency): string
     {
-        return self::TO_CODE[$currency->value] ?? '368';
+        // Every Currency enum case has an entry in TO_CODE.
+        return self::TO_CODE[$currency->value];
     }
 
     public static function fromCode(string $code): ?Currency
