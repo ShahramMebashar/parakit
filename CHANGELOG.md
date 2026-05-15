@@ -4,6 +4,15 @@ All notable changes to `shah/parakit` are documented in this file. The format is
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-05-15
+
+### Added
+- `Payment::resolveMerchantUsing()` — register a callback that supplies gateway config at request time, so multi-tenant apps can source per-merchant credentials from a database (or any store) without declaring them in `config/parakit.php`.
+- Octane safety: `PaymentManager` resolved-driver cache is flushed after every request via `RequestHandled` (and Octane's `RequestTerminated`), so tenant credentials never leak across requests on a reused worker.
+
+### Fixed
+- `FibTokenCache` cache key is now scoped per OAuth realm + client (`base_url` + `client_id`). Previously a hardcoded `parakit:fib:token` key meant two FIB configs shared a cached token.
+
 ## [0.1.0] — 2026-05-14
 
 ### Added
@@ -36,5 +45,4 @@ All notable changes to `shah/parakit` are documented in this file. The format is
 ### Known limitations
 - Orphan webhook events (`processed_at IS NULL`, no local tx) are preserved but not auto-replayed; a v0.2 reconciler is planned.
 - PaymentLogger cache may grow large on busy systems — `parakit:logs:prune` is scheduled daily and configurable via `parakit.logging.retention_days`.
-- Multi-merchant credential resolution is roadmap (v0.3).
 - Tokenization (saved payment methods) is roadmap (v1.0).

@@ -18,14 +18,28 @@ class PaymentManager
     /** @var array<string, Closure(array, Container, string): PaymentGateway> */
     private array $customCreators = [];
 
+    /** @var (Closure(string): array<string,mixed>)|null */
+    private ?Closure $merchantResolver = null;
+
     public function __construct(private readonly Container $container) {}
 
     public function driver(?string $name = null): PaymentGateway
     {
         $name ??= (string) config('parakit.default');
 
+        // Memo: same gateway name reuses the same instance. Flushed by
+        // flushResolved() between Octane requests so tenants never share a
+        // stale instance across requests.
         if (isset($this->resolved[$name])) {
             return $this->resolved[$name];
+        }
+
+        if ($this->merchantResolver !== null) {
+            $cfg = ($this->merchantResolver)($name);
+            if (!is_array($cfg) || $cfg === []) {
+                throw new UnsupportedGatewayException("Merchant resolver returned no config for: {$name}");
+            }
+            return $this->resolved[$name] = $this->makeDriver($name, $cfg);
         }
 
         $cfg = config("parakit.gateways.{$name}");
@@ -33,23 +47,13 @@ class PaymentManager
             throw new UnsupportedGatewayException("Unknown gateway: {$name}");
         }
 
-        $driver = $cfg['driver'] ?? $name;
+        return $this->resolved[$name] = $this->makeDriver($name, $cfg);
+    }
 
-        // The configured key ($name, e.g. "fib_branch_a") is the identity the
-        // gateway must use for its breaker key, idempotency cache, webhook
-        // routing and stored `gateway` column — NOT the driver type ($driver,
-        // e.g. "fib"). Two configs pointing at the same driver must remain
-        // independent.
-        if (isset($this->customCreators[$driver])) {
-            return $this->resolved[$name] = ($this->customCreators[$driver])($cfg, $this->container, $name);
-        }
-
-        $method = 'create' . str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $driver))) . 'Driver';
-        if (method_exists($this, $method)) {
-            return $this->resolved[$name] = $this->{$method}($cfg, $name);
-        }
-
-        throw new UnsupportedGatewayException("No driver registered for: {$driver}");
+    /** @param Closure(string): array<string,mixed> $resolver */
+    public function resolveMerchantUsing(Closure $resolver): void
+    {
+        $this->merchantResolver = $resolver;
     }
 
     /** @param Closure(array, Container): PaymentGateway $creator */
@@ -80,5 +84,27 @@ class PaymentManager
     protected function createZaincashDriver(array $cfg, string $name): PaymentGateway
     {
         return new ZainCashGateway($name, $cfg);
+    }
+
+    /** @param array<string,mixed> $cfg */
+    private function makeDriver(string $name, array $cfg): PaymentGateway
+    {
+        $driver = $cfg['driver'] ?? $name;
+
+        // The configured key ($name, e.g. "fib_branch_a") is the identity the
+        // gateway must use for its breaker key, idempotency cache, webhook
+        // routing and stored `gateway` column — NOT the driver type ($driver,
+        // e.g. "fib"). Two configs pointing at the same driver must remain
+        // independent.
+        if (isset($this->customCreators[$driver])) {
+            return ($this->customCreators[$driver])($cfg, $this->container, $name);
+        }
+
+        $method = 'create' . str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $driver))) . 'Driver';
+        if (method_exists($this, $method)) {
+            return $this->{$method}($cfg, $name);
+        }
+
+        throw new UnsupportedGatewayException("No driver registered for: {$driver}");
     }
 }

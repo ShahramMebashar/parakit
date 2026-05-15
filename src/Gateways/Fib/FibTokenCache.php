@@ -9,18 +9,25 @@ use Shah\Parakit\Exceptions\GatewayUnavailableException;
 
 final class FibTokenCache
 {
-    private const CACHE_KEY = 'parakit:fib:token';
     private const SAFETY_MARGIN = 60;
+
+    private readonly string $cacheKey;
 
     public function __construct(
         private readonly string $baseUrl,
         private readonly string $clientId,
         private readonly string $clientSecret,
-    ) {}
+    ) {
+        // Scope the token cache key to the OAuth realm + client so two FIB
+        // configs pointing at different endpoints or client IDs never share
+        // a cached token. xxh3 is fast and non-cryptographic — uniqueness is
+        // all that's needed here.
+        $this->cacheKey = 'parakit:fib:token:' . hash('xxh3', $this->baseUrl . '|' . $this->clientId);
+    }
 
     public function token(): string
     {
-        $cached = Cache::get(self::CACHE_KEY);
+        $cached = Cache::get($this->cacheKey);
         if (is_string($cached) && $cached !== '') {
             return $cached;
         }
@@ -44,7 +51,7 @@ final class FibTokenCache
         // a brief burst-protection window even if FIB hands us very short
         // tokens; otherwise we'd hammer the token endpoint.
         $ttl = max(30, $expiresIn - self::SAFETY_MARGIN);
-        Cache::put(self::CACHE_KEY, $token, $ttl);
+        Cache::put($this->cacheKey, $token, $ttl);
         return $token;
     }
 }

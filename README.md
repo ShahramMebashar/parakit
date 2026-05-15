@@ -142,6 +142,86 @@ Other events: `PaymentInitiated`, `PaymentFailed`, `PaymentCancelled`, `PaymentR
 
 ---
 
+## Multi-tenant / multiple merchants
+
+Need FIB credentials for merchant A and a different set for merchant B? Add as many named gateway configs as you need — same driver, different keys:
+
+```php
+// config/parakit.php
+'gateways' => [
+    'fib_main' => [
+        'driver'        => 'fib',
+        'base_url'      => env('FIB_MAIN_BASE_URL'),
+        'client_id'     => env('FIB_MAIN_CLIENT_ID'),
+        'client_secret' => env('FIB_MAIN_CLIENT_SECRET'),
+        'callback_url'  => env('FIB_MAIN_CALLBACK_URL'),
+    ],
+    'fib_branch' => [
+        'driver'        => 'fib',
+        'base_url'      => env('FIB_BRANCH_BASE_URL'),
+        'client_id'     => env('FIB_BRANCH_CLIENT_ID'),
+        'client_secret' => env('FIB_BRANCH_CLIENT_SECRET'),
+        'callback_url'  => env('FIB_BRANCH_CALLBACK_URL'),
+    ],
+    'zaincash_merchant_b' => [
+        'driver'      => 'zaincash',
+        'base_url'    => env('ZC_B_BASE_URL'),
+        'merchant_id' => env('ZC_B_MERCHANT_ID'),
+        'msisdn'      => env('ZC_B_MSISDN'),
+        'secret'      => env('ZC_B_SECRET'),
+        'redirect_url'=> env('ZC_B_REDIRECT_URL'),
+    ],
+],
+```
+
+Then select the right one per request:
+
+```php
+// Resolve at runtime — driven by your tenant lookup, user attribute, etc.
+$gateway = $merchant->gateway_key; // e.g. "fib_branch"
+
+$response = Payment::for($order)
+    ->driver($gateway)
+    ->amount(5000, Currency::IQD)
+    ->description("Order #{$order->id}")
+    ->idempotencyKey($order->id)
+    ->charge();
+```
+
+Each named config is fully isolated: its own circuit-breaker state, idempotency cache namespace, webhook route (`POST /payments/webhooks/fib_branch`), and `gateway` column in `payment_transactions`. Two configs sharing the same driver never bleed into each other.
+
+### Credentials in a database — `resolveMerchantUsing()`
+
+When merchants self-onboard and their credentials live in your database — not in `config/parakit.php` — register a resolver once in a service provider. Parakit calls it with the gateway name and expects the same config array shape as a static entry:
+
+```php
+// app/Providers/AppServiceProvider.php — boot()
+use Shah\Parakit\Facades\Payment;
+
+Payment::resolveMerchantUsing(function (string $gateway): array {
+    $merchant = app(TenantManager::class)->current();
+
+    return $merchant->gatewayConfig($gateway); // ['driver' => 'fib', 'base_url' => ..., ...]
+});
+```
+
+After that, nothing else changes — `Payment::for($order)->driver('fib')->charge()` routes through your resolver. The resolver receives the gateway name, so one tenant can have any number of gateways (`fib`, `zaincash`, `fib_vip`, …), each resolved independently.
+
+> Store credentials **encrypted** (or as secret-manager references) and decrypt inside the resolver — don't keep raw secrets in plain DB columns.
+
+---
+
+## Laravel Octane
+
+Parakit is Octane-safe out of the box — no extra setup, just run `octane:start`:
+
+- **Correlation IDs** — `AssignCorrelationId` runs `CorrelationId::reset()` in its `terminate()` hook, so the per-request ULID is scrubbed from the container before the next request lands on the same worker.
+- **Resolved gateways** — `PaymentManager` memoises instantiated drivers for the life of a request. Parakit flushes that cache automatically after every request (on `RequestHandled`, plus Octane's `RequestTerminated`), so a resolver returning per-tenant credentials never leaks one tenant's gateway into the next request on a reused worker.
+
+If you reconfigure gateways manually mid-request, you can still call `app('parakit.manager')->flushResolved()` yourself.
+
+---
+
 ## Security
 
 See [SECURITY.md](SECURITY.md). TL;DR: webhook signatures are mandatory, comparisons are constant-time, TLS verification is always on, secrets are redacted before they touch the DB.
