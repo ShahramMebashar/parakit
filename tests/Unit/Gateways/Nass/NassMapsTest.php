@@ -2,7 +2,9 @@
 declare(strict_types=1);
 
 use Froshly\Parakit\Gateways\Nass\NassCurrencyMap;
+use Froshly\Parakit\Gateways\Nass\NassStatusMap;
 use Froshly\Parakit\Enums\Currency;
+use Froshly\Parakit\Enums\PaymentStatus;
 
 it('maps Currency enum to NassPay ISO numeric codes', function () {
     expect(NassCurrencyMap::toCode(Currency::IQD))->toBe('368')
@@ -16,4 +18,29 @@ it('maps NassPay ISO numeric codes back to Currency', function () {
 
 it('returns null for an unknown numeric currency code', function () {
     expect(NassCurrencyMap::fromCode('999'))->toBeNull();
+});
+
+it('maps responseCode 00 to Paid', function () {
+    expect(NassStatusMap::toStatus('00'))->toBe(PaymentStatus::Paid);
+});
+
+it('maps responseCode -25 to Cancelled', function () {
+    expect(NassStatusMap::toStatus('-25'))->toBe(PaymentStatus::Cancelled);
+});
+
+it('maps in-progress responseCodes to Pending', function () {
+    expect(NassStatusMap::toStatus('-33'))->toBe(PaymentStatus::Pending)
+        ->and(NassStatusMap::toStatus('-39'))->toBe(PaymentStatus::Pending)
+        ->and(NassStatusMap::toStatus('-40'))->toBe(PaymentStatus::Pending)
+        ->and(NassStatusMap::toStatus('-47'))->toBe(PaymentStatus::Pending);
+});
+
+it('maps other negative responseCodes to Failed', function () {
+    expect(NassStatusMap::toStatus('-8'))->toBe(PaymentStatus::Failed)
+        ->and(NassStatusMap::toStatus('-30'))->toBe(PaymentStatus::Failed);
+});
+
+it('falls back to Pending for an unrecognised responseCode', function () {
+    expect(NassStatusMap::toStatus(''))->toBe(PaymentStatus::Pending)
+        ->and(NassStatusMap::toStatus('99'))->toBe(PaymentStatus::Pending);
 });
