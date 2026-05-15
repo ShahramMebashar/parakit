@@ -114,7 +114,23 @@ final class ZainCashGateway extends AbstractGateway implements SupportsStatusChe
 
     public function status(string $gatewayTransactionId): PaymentResponse
     {
-        throw new \RuntimeException('not implemented');
+        $raw = $this->client->inquiry($gatewayTransactionId);
+
+        $status = ZainCashStatusMap::toStatus((string) ($raw['status'] ?? ''));
+        $details = (array) ($raw['transactionDetails'] ?? []);
+        $amountInfo = (array) ($details['amount'] ?? []);
+
+        return new PaymentResponse(
+            success: $status->isSuccessful() || $status === PaymentStatus::Pending,
+            gateway: $this->name(),
+            gatewayTransactionId: $gatewayTransactionId,
+            reference: (string) ($details['orderId'] ?? ''),
+            status: $status,
+            amount: (int) ($amountInfo['value'] ?? 0),
+            currency: Currency::IQD,
+            correlationId: $this->correlationId(),
+            raw: $raw,
+        );
     }
 
     public function refund(RefundRequest $request): RefundResponse
