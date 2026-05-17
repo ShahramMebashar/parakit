@@ -38,6 +38,8 @@ return [
             'client_secret' => env('FIB_CLIENT_SECRET'),
             'currency' => env('FIB_CURRENCY', 'IQD'),
             'refundable_for' => env('FIB_REFUNDABLE_FOR', 'P7D'),
+            'expires_in' => env('FIB_EXPIRES_IN'),
+            'category' => env('FIB_CATEGORY'),
             'callback_url' => env('FIB_CALLBACK_URL'),
         ],
         'zaincash' => [
@@ -51,6 +53,16 @@ return [
             'lang'          => env('ZAINCASH_LANG', 'en'),
             'success_url'   => env('ZAINCASH_SUCCESS_URL'),
             'failure_url'   => env('ZAINCASH_FAILURE_URL'),
+        ],
+        'nass' => [
+            'driver'           => 'nass',
+            'base_url'         => env('NASS_BASE_URL', 'https://uat-gateway.nass.iq:9746'),
+            'username'         => env('NASS_USERNAME'),
+            'password'         => env('NASS_PASSWORD'),
+            'token_ttl'        => (int) env('NASS_TOKEN_TTL', 3000),
+            'transaction_type' => (int) env('NASS_TRANSACTION_TYPE', 1),
+            'callback_url'     => env('NASS_CALLBACK_URL'),
+            'return_url'       => env('NASS_RETURN_URL'),
         ],
     ],
 ];

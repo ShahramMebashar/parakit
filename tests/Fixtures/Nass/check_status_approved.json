@@ -1,0 +1,21 @@
+{
+  "success": true,
+  "code": 0,
+  "status_code": 200,
+  "data": {
+    "terminal": "00093270",
+    "actionCode": "0",
+    "responseCode": "00",
+    "statusMsg": "Approved",
+    "card": "5123XXXXXXXX0008",
+    "amount": "10",
+    "currency": "368",
+    "tranDate": "2026-01-07 11:52:30",
+    "rrn": "600701365192",
+    "intRef": "52B4517F34399E21",
+    "nonce": "7c2066fcbfd42a8e716d19538f7a599a",
+    "transactionOrigin": "local",
+    "orderId": "4471920038",
+    "timestamp": "20260107085130"
+  }
+}

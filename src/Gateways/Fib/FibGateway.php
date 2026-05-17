@@ -5,6 +5,7 @@ namespace Froshly\Parakit\Gateways\Fib;
 
 use DateTimeImmutable;
 use Illuminate\Http\Request;
+use Froshly\Parakit\Contracts\SupportsCancel;
 use Froshly\Parakit\Contracts\SupportsRefund;
 use Froshly\Parakit\Contracts\SupportsStatusCheck;
 use Froshly\Parakit\DTOs\PaymentRequest;
@@ -19,7 +20,7 @@ use Froshly\Parakit\Exceptions\InvalidWebhookSignatureException;
 use Froshly\Parakit\Gateways\AbstractGateway;
 use Froshly\Parakit\Support\Money;
 
-final class FibGateway extends AbstractGateway implements SupportsRefund, SupportsStatusCheck
+final class FibGateway extends AbstractGateway implements SupportsCancel, SupportsRefund, SupportsStatusCheck
 {
     private readonly FibClient $client;
 
@@ -42,12 +43,38 @@ final class FibGateway extends AbstractGateway implements SupportsRefund, Suppor
     {
         // FIB's `monetaryValue.amount` is a decimal string in MAJOR units.
         // Convert minor-unit integers (our canonical DTO shape) before sending.
-        $raw = $this->client->createCharge([
+        $params = [
             'amount' => Money::format($request->amount, $request->currency),
             'currency' => $request->currency->value,
             'description' => $request->description,
             'callback' => $request->callbackUrl ?? (string) ($this->config['callback_url'] ?? ''),
-        ]);
+        ];
+
+        // In-FIB-app redirect after the user completes or cancels the payment.
+        if ($request->returnUrl !== null && $request->returnUrl !== '') {
+            $params['redirectUri'] = $request->returnUrl;
+        }
+
+        // ISO-8601 durations (e.g. P7D, PT12H) controlling how long the payment
+        // stays payable / refundable. Per-request metadata overrides config;
+        // the key is omitted entirely when neither is set.
+        $refundableFor = $request->metadata['refundable_for'] ?? $this->config['refundable_for'] ?? null;
+        if ($refundableFor !== null && $refundableFor !== '') {
+            $params['refundableFor'] = (string) $refundableFor;
+        }
+        $expiresIn = $request->metadata['expires_in'] ?? $this->config['expires_in'] ?? null;
+        if ($expiresIn !== null && $expiresIn !== '') {
+            $params['expiresIn'] = (string) $expiresIn;
+        }
+
+        // FIB transaction category (ERP, POS, ECOMMERCE, ...); defaults to
+        // UNKNOWN at FIB when omitted.
+        $category = $request->metadata['category'] ?? $this->config['category'] ?? null;
+        if ($category !== null && $category !== '') {
+            $params['category'] = (string) $category;
+        }
+
+        $raw = $this->client->createCharge($params);
 
         // Trust an explicit status if FIB included one in the create response,
         // otherwise default to Pending (the QR/deep-link/readable-code flow).
@@ -88,6 +115,18 @@ final class FibGateway extends AbstractGateway implements SupportsRefund, Suppor
             correlationId: $this->correlationId(),
             raw: $raw,
         );
+    }
+
+    /**
+     * Cancel an active, unpaid FIB payment. FIB's cancel endpoint returns no
+     * payment body, so the authoritative post-cancel state is re-fetched via
+     * the status endpoint (`CANCELLED` -> PaymentStatus::Cancelled).
+     */
+    public function cancel(string $gatewayTransactionId): PaymentResponse
+    {
+        $this->client->cancel($gatewayTransactionId);
+
+        return $this->status($gatewayTransactionId);
     }
 
     public function refund(RefundRequest $request): RefundResponse

@@ -72,13 +72,13 @@ Parakit is the default way to take payments from Iraqi and Kurdish customers in 
 
 ## Supported gateways
 
-| Gateway | Flow | Currency | Webhook auth | Refund | Tokenization |
-|---|---|---|---|---|---|
-| FIB | QR / deep-link / readable code → callback + status poll | IQD, USD | Callback by ID, verified via status endpoint | ✅ | Roadmap |
-| ZainCash | JWT-signed redirect → user pays in ZainCash app → JWT callback | IQD | JWT (HS256) shared secret | ⚠️ Partial | Roadmap |
-| FastPay | Form-redirect → signed callback | IQD | HMAC signature | ⚠️ Partial | ❌ |
-| NassPay | Redirect → callback | IQD | HMAC / token | ⚠️ Partial | ❌ |
-| NassWallet | Redirect → callback | IQD | HMAC / token | ⚠️ Partial | ❌ |
+| Gateway | Flow | Currency | Webhook auth | Refund | Cancel | Tokenization |
+|---|---|---|---|---|---|---|
+| FIB | QR / deep-link / readable code → callback + status poll | IQD | Callback by ID, verified via status endpoint | ✅ | ✅ | Roadmap |
+| ZainCash | OAuth2 API → hosted payment page redirect → JWT callback | IQD | JWT (HS256) merchant API key | ✅ Full only | ❌ | Roadmap |
+| FastPay | Form-redirect → signed callback | IQD | HMAC signature | ⚠️ Partial | ❌ | ❌ |
+| NassPay | Redirect → callback | IQD | HMAC / token | ⚠️ Partial | ❌ | ❌ |
+| NassWallet | Redirect → callback | IQD | HMAC / token | ⚠️ Partial | ❌ | ❌ |
 
 Each driver lives in its own subfolder and can be swapped at runtime via config.
 
@@ -867,11 +867,11 @@ Filament package. Multi-merchant credential resolver. Docs site live in three la
 
 ### v1.0 (stable)
 
-After 5+ production users report 30 days of clean operation. Lock public API. Tokenization where supported. Circuit breaker + retry primitives hardened. OpenTelemetry exporter optional.
+Lock public API. Circuit breaker + retry primitives hardened. OpenTelemetry exporter optional.
 
 ### v1.1+
 
-Qi Card, AsiaHawala, and other emerging Iraqi gateways. Subscription helpers. Advanced reconciliation (if gateway APIs expand). Dashboard analytics package.
+Qi Card, AsiaHawala, and other emerging Iraqi gateways. Subscription helpers. Advanced reconciliation (if gateway APIs expand).
 
 ---
 
@@ -890,17 +890,25 @@ Qi Card, AsiaHawala, and other emerging Iraqi gateways. Subscription helpers. Ad
 
 ### FIB
 
-- OAuth2 client_credentials flow; token cached with TTL
-- `monetaryValue.amount` is a decimal string, currency is `IQD` or `USD`
+- OAuth2 client_credentials flow; token cached with TTL (FIB tokens live ~60s)
+- `monetaryValue.amount` is a decimal string; FIB currently supports `IQD` only
+- Charge sends `statusCallbackUrl` (webhook URL) and `redirectUri` (from the
+  request `returnUrl`); `description` is truncated to FIB's 50-char limit
+- Optional charge fields via config or per-request `metadata`: `expiresIn` /
+  `refundableFor` (ISO-8601 durations), `category` (ERP, POS, ECOMMERCE, ...)
 - Callback delivers `{id, status}`; driver re-fetches status endpoint for full state
-- Refund window default `P7D` (configurable per merchant by FIB)
+- Refund window: FIB defaults to 24h, `refundableFor` accepts 12h–7d
+- Supports payment cancellation (`SupportsCancel`) for active, unpaid payments
 - Returns `qrCode` (base64 PNG), `readableCode`, `personalAppLink`
+  (`businessAppLink` / `corporateAppLink` are preserved in `raw`)
 
 ### ZainCash
 
-- JWT-signed init request (HS256 with shared secret)
-- Hosted payment page; redirect-based UX
-- Webhook delivers a JWT in `token` form field
+- ZainCash Payment Gateway v2: OAuth2 `client_credentials` Bearer auth
+- `POST /api/v2/payment-gateway/transaction/init` returns a hosted `redirectUrl`
+- Status via inquiry endpoint; full reversal via reverse endpoint
+- Redirect (`token`) and webhook (`webhook_token`) callbacks are HS256 JWTs,
+  verified with the merchant API key; `eventId` is the idempotency key
 - IQD only; whole-number amounts
 
 ### FastPay
