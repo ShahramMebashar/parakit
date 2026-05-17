@@ -84,6 +84,27 @@ final class WebhookProcessor
             }
             $tx->last_raw_response = $p->raw;
 
+            // Amount integrity: a Paid webhook must settle the amount we
+            // charged. A driver that re-verifies via status-check may report
+            // amount 0 (no amount field) — that is "not reported", not a
+            // mismatch. on_amount_mismatch controls the action: 'log' (default)
+            // records a warning and proceeds; 'reject' refuses the transition.
+            if ($this->isAmountMismatch($p, $tx)) {
+                Log::warning('parakit.webhook.amount_mismatch', [
+                    'gateway' => $p->gateway,
+                    'tx' => $tx->id,
+                    'event_id' => $eventRow->event_id,
+                    'expected_amount' => (int) $tx->amount,
+                    'webhook_amount' => $p->amount,
+                ]);
+
+                if (config('parakit.webhooks.on_amount_mismatch', 'log') === 'reject') {
+                    $tx->save();
+                    $eventRow->update(['processed_at' => now()]);
+                    return;
+                }
+            }
+
             try {
                 $tx->transitionTo($p->status);
             } catch (IllegalStateTransitionException) {
@@ -106,6 +127,18 @@ final class WebhookProcessor
                 $this->fireEventFor($p->status, $tx);
             }
         });
+    }
+
+    /**
+     * True when a Paid webhook carries a non-zero amount that disagrees with
+     * the stored charge. Restricted to Paid: a Refunded/PartiallyRefunded
+     * webhook legitimately carries the refund amount, not the charge amount.
+     */
+    private function isAmountMismatch(WebhookPayload $p, PaymentTransaction $tx): bool
+    {
+        return $p->status === PaymentStatus::Paid
+            && $p->amount !== 0
+            && $p->amount !== (int) $tx->amount;
     }
 
     private function fireEventFor(PaymentStatus $status, PaymentTransaction $tx): void
