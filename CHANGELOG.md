@@ -4,6 +4,8 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-05-17
+
 ### Security
 - Webhook amount integrity: `WebhookProcessor` now compares a `Paid` webhook's amount against the stored transaction amount. A non-zero mismatch is logged as `parakit.webhook.amount_mismatch`; the new `parakit.webhooks.on_amount_mismatch` setting (`log` default, or `reject`) controls whether the transition is still applied. A reported amount of `0` is treated as "not reported" and never flagged. (#5)
 
