@@ -4,6 +4,9 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 
 ## [Unreleased]
 
+### Added
+- FastPay driver: hosted-page redirect charge, status check, and partial refund. FastPay authenticates with `store_id`/`store_password` per request (no token cache); the unsigned IPN webhook is re-verified server-to-server via the `payment/validate` endpoint, and refunds look up the original payer's mobile number before pushing funds back.
+
 ## [0.5.0] — 2026-05-17
 
 ### Added

@@ -64,5 +64,15 @@ return [
             'callback_url'     => env('NASS_CALLBACK_URL'),
             'return_url'       => env('NASS_RETURN_URL'),
         ],
+        'fastpay' => [
+            'driver'            => 'fastpay',
+            'base_url'          => env('FASTPAY_BASE_URL', 'https://staging-pgw.fast-pay.iq'),
+            'store_id'          => env('FASTPAY_STORE_ID'),
+            'store_password'    => env('FASTPAY_STORE_PASSWORD'),
+            'refund_secret_key' => env('FASTPAY_REFUND_SECRET_KEY'),
+            'success_url'       => env('FASTPAY_SUCCESS_URL'),
+            'cancel_url'        => env('FASTPAY_CANCEL_URL'),
+            'callback_url'      => env('FASTPAY_CALLBACK_URL'),
+        ],
     ],
 ];

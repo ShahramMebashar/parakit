@@ -1,0 +1,18 @@
+{
+    "code": 200,
+    "messages": [],
+    "data": {
+        "gw_transaction_id": "AXMNP7A004",
+        "merchant_order_id": "M20211231735856794",
+        "received_amount": "5000.00",
+        "currency": "IQD",
+        "customer_name": "PM Team 2",
+        "customer_mobile_number": "+9641000000004",
+        "at": "2026-05-17 15:32:00",
+        "transaction_id": "AXMNP7A004",
+        "order_id": "M20211231735856794",
+        "customer_account_no": "+9641000000004",
+        "status": "Success",
+        "received_at": "2026-05-17 15:32:00"
+    }
+}
