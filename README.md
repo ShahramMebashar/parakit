@@ -34,15 +34,6 @@ composer require froshly/parakit
 php artisan parakit:install
 ```
 
-> Until Packagist registration is complete, add the repository as a VCS
-> source in your app's `composer.json`:
->
-> ```json
-> "repositories": [
->   { "type": "vcs", "url": "https://github.com/ShahramMebashar/parakit" }
-> ]
-> ```
-
 Add credentials to your `.env`:
 
 ```env
