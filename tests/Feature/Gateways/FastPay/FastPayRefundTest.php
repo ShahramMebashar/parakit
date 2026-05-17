@@ -52,6 +52,41 @@ it('refunds by looking up the payer msisdn via validate, then calling refund', f
         && $req['msisdn'] === '+9641000000004');
 });
 
+it('fails the refund when FastPay returns no payer mobile number', function () {
+    $validateBody = json_decode(
+        file_get_contents(__DIR__ . '/../../../Fixtures/FastPay/validate_success.json'),
+        true,
+    );
+    $validateBody['data']['customer_mobile_number'] = '';
+
+    Http::fake([
+        '*/api/v1/public/pgw/payment/validate' => Http::response($validateBody, 200),
+        '*/api/v1/public/pgw/payment/refund' => Http::response(['code' => 200], 200),
+    ]);
+
+    $r = Payment::driver('fastpay')->refund(new RefundRequest(
+        transactionId: 'ORD12345678', amount: 5000,
+    ));
+
+    expect($r->success)->toBeFalse();
+    Http::assertNotSent(fn ($req) => str_contains($req->url(), '/payment/refund'));
+});
+
+it('rejects a refund larger than the original received amount', function () {
+    Http::fake([
+        '*/api/v1/public/pgw/payment/validate' => fakeFastPayValidate(),
+        '*/api/v1/public/pgw/payment/refund' => Http::response(['code' => 200], 200),
+    ]);
+
+    $r = Payment::driver('fastpay')->refund(new RefundRequest(
+        transactionId: 'ORD12345678', amount: 9000,
+    ));
+
+    expect($r->success)->toBeFalse()
+        ->and($r->error?->code)->toBe(PaymentErrorCode::InvalidAmount);
+    Http::assertNotSent(fn ($req) => str_contains($req->url(), '/payment/refund'));
+});
+
 it('returns a failed RefundResponse when FastPay reports the transaction already refunded', function () {
     Http::fake([
         '*/api/v1/public/pgw/payment/validate' => fakeFastPayValidate(),

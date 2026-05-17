@@ -7,7 +7,6 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Froshly\Parakit\Exceptions\GatewayUnavailableException;
-use Froshly\Parakit\Exceptions\PaymentException;
 
 /**
  * HTTP transport for the FastPay payment gateway.
@@ -69,10 +68,15 @@ final class FastPayClient
 
         // FastPay answers HTTP 200 even for errors; the body `code` is the
         // real outcome. Anything other than 200 (422 bad creds, 404 not
-        // found) is deterministic — throw a non-retryable PaymentException so
-        // the retry loop never re-sends a request that will fail identically.
-        if (($json['code'] ?? null) !== 200) {
-            throw new PaymentException("FastPay {$uri} rejected: " . $this->firstMessage($json));
+        // found) is deterministic — throw a non-retryable FastPayApiException
+        // so the retry loop never re-sends a request that will fail
+        // identically. The `code` is carried so callers can tell 404 apart.
+        $code = $json['code'] ?? null;
+        if ($code !== 200) {
+            throw new FastPayApiException(
+                "FastPay {$uri} rejected: " . $this->firstMessage($json),
+                is_int($code) ? $code : 0,
+            );
         }
 
         return $json;

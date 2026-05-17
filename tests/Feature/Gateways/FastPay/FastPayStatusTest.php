@@ -38,6 +38,18 @@ it('reads a paid transaction status via the validate endpoint', function () {
         && $req['store_id'] === 'STORE-1');
 });
 
+it('surfaces a credentials error from validate instead of reporting Pending', function () {
+    Http::fake([
+        '*/api/v1/public/pgw/payment/validate' => Http::response([
+            'code' => 422,
+            'messages' => ['Sorry! The Store ID and Store Password combination is wrong.'],
+            'data' => null,
+        ], 200),
+    ]);
+
+    Payment::driver('fastpay')->status('ORD12345678');
+})->throws(\Froshly\Parakit\Exceptions\PaymentException::class);
+
 it('treats a not-found order (code 404) as still Pending', function () {
     Http::fake([
         '*/api/v1/public/pgw/payment/validate' => Http::response([

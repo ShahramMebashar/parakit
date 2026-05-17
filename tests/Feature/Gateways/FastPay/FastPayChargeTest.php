@@ -73,6 +73,14 @@ it('sends an 8-32 char alphanumeric order_id, integer bill_amount and a JSON-str
     });
 });
 
+it('rejects a non-IQD charge — FastPay only settles IQD', function () {
+    fakeFastPayInitiation();
+
+    Payment::driver('fastpay')->charge(new PaymentRequest(
+        reference: 'INV-USD', amount: 5000, currency: Currency::USD, description: 'd',
+    ));
+})->throws(InvalidArgumentException::class);
+
 it('derives the same order_id for the same charge (retry-safe)', function () {
     fakeFastPayInitiation();
 

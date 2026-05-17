@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Froshly\Parakit\Gateways\FastPay;
 
+use DateTimeImmutable;
+use InvalidArgumentException;
 use Illuminate\Http\Request;
 use Froshly\Parakit\Contracts\SupportsRefund;
 use Froshly\Parakit\Contracts\SupportsStatusCheck;
@@ -37,6 +39,14 @@ final class FastPayGateway extends AbstractGateway implements SupportsStatusChec
 
     protected function performCharge(PaymentRequest $request): PaymentResponse
     {
+        // FastPay settles IQD only. Reject other currencies up front rather
+        // than silently charging IQD while echoing back the requested currency.
+        if ($request->currency !== Currency::IQD) {
+            throw new InvalidArgumentException(
+                'FastPay settles IQD only; got ' . $request->currency->value
+            );
+        }
+
         $orderId = $this->deriveOrderId($request);
 
         $raw = $this->client->initiation($this->credentials() + [
@@ -82,10 +92,15 @@ final class FastPayGateway extends AbstractGateway implements SupportsStatusChec
             $raw = $this->client->validate($this->credentials() + [
                 'order_id' => $gatewayTransactionId,
             ]);
-        } catch (PaymentException $e) {
+        } catch (FastPayApiException $e) {
             // FastPay answers code 404 for an order it has not seen a payment
-            // for — that is "not paid yet", not a failure. Report Pending.
-            return $this->statusResponse($gatewayTransactionId, PaymentStatus::Pending, 0, []);
+            // for — that is "not paid yet", not a failure. Any other rejection
+            // (e.g. 422 bad credentials) is a real error and must surface
+            // rather than be silently reported as Pending.
+            if ($e->apiCode === 404) {
+                return $this->statusResponse($gatewayTransactionId, PaymentStatus::Pending, 0, []);
+            }
+            throw $e;
         }
 
         [$status, $amount] = $this->parseValidateData($raw);
@@ -105,8 +120,25 @@ final class FastPayGateway extends AbstractGateway implements SupportsStatusChec
             $validated = $this->client->validate($this->credentials() + [
                 'order_id' => $request->transactionId,
             ]);
-            $msisdn = (string) (((array) ($validated['data'] ?? []))['customer_mobile_number'] ?? '');
+        } catch (PaymentException $e) {
+            return $this->failedRefund($e->getMessage());
+        }
 
+        // The refund recipient must be the original payer. Refuse rather than
+        // hand FastPay an empty msisdn for a money-movement call.
+        $msisdn = (string) data_get($validated, 'data.customer_mobile_number', '');
+        if ($msisdn === '') {
+            return $this->failedRefund('FastPay validate returned no payer mobile number');
+        }
+
+        // Defense-in-depth: reject a refund larger than what was received
+        // before touching the gateway (FastPay also rejects it server-side).
+        [, $receivedAmount] = $this->parseValidateData($validated);
+        if ($receivedAmount > 0 && $request->amount > $receivedAmount) {
+            return $this->failedRefund('Refund amount exceeds the original received amount');
+        }
+
+        try {
             $raw = $this->client->refund($this->credentials() + [
                 'order_id'          => $request->transactionId,
                 'amount'            => $request->amount,
@@ -114,25 +146,30 @@ final class FastPayGateway extends AbstractGateway implements SupportsStatusChec
                 'msisdn'            => $msisdn,
             ]);
         } catch (PaymentException $e) {
-            return new RefundResponse(
-                success: false,
-                refundId: null,
-                refundedAmount: 0,
-                error: new PaymentError(
-                    code: FastPayErrorMap::toCode($e->getMessage()),
-                    rawCode: 'fastpay_refund_rejected',
-                    rawMessage: $e->getMessage(),
-                ),
-            );
+            return $this->failedRefund($e->getMessage());
         }
 
-        $invoiceId = ((array) (((array) ($raw['data'] ?? []))['summary'] ?? []))['invoice_id'] ?? null;
+        $invoiceId = data_get($raw, 'data.summary.invoice_id');
 
         return new RefundResponse(
             success: true,
             refundId: is_string($invoiceId) && $invoiceId !== '' ? $invoiceId : null,
             refundedAmount: $request->amount,
             raw: $raw,
+        );
+    }
+
+    private function failedRefund(string $message): RefundResponse
+    {
+        return new RefundResponse(
+            success: false,
+            refundId: null,
+            refundedAmount: 0,
+            error: new PaymentError(
+                code: FastPayErrorMap::toCode($message),
+                rawCode: 'fastpay_refund_rejected',
+                rawMessage: $message,
+            ),
         );
     }
 
@@ -170,7 +207,7 @@ final class FastPayGateway extends AbstractGateway implements SupportsStatusChec
             amount: $amount,
             currency: Currency::IQD,
             eventId: $orderId . ':' . $status->value,
-            occurredAt: new \DateTimeImmutable(),
+            occurredAt: new DateTimeImmutable(),
             raw: $raw,
         );
     }
