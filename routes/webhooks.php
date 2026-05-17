@@ -13,4 +13,12 @@ Route::middleware(array_merge(
         config('parakit.webhooks.route_prefix', 'payments/webhooks') . '/{gateway}',
         WebhookController::class,
     )->name('parakit.webhook');
+
+    // Some gateways (e.g. NassWallet) append `/callback` to the merchant's
+    // configured callback URL. This alias accepts that suffix and routes to
+    // the same controller; the {gateway} segment is unchanged.
+    Route::post(
+        config('parakit.webhooks.route_prefix', 'payments/webhooks') . '/{gateway}/callback',
+        WebhookController::class,
+    )->name('parakit.webhook.callback');
 });

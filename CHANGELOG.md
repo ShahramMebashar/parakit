@@ -4,6 +4,10 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 
 ## [Unreleased]
 
+### Added
+- NassWallet driver: hosted checkout-portal redirect charge, status check, and webhook handling. NassWallet authenticates with a static `Basic` token plus a per-merchant bearer token (cached until `accessTokenExpiry`); the unsigned merchant callback is re-verified server-to-server via the `checkTransaction` endpoint.
+- Webhook routing now also accepts a `payments/webhooks/{gateway}/callback` path — NassWallet appends `/callback` to the merchant callback URL.
+
 ## [0.5.1] — 2026-05-17
 
 ### Security

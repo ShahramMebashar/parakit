@@ -25,7 +25,7 @@ return [
     'logging' => [
         'enabled' => true,
         'channel' => env('PARAKIT_LOG_CHANNEL', 'stack'),
-        'redact_keys' => ['password', 'token', 'secret', 'card', 'msisdn', 'authorization'],
+        'redact_keys' => ['password', 'token', 'secret', 'card', 'msisdn', 'authorization', 'transactionPin', 'mpin'],
         'retention_days' => 90,
     ],
 
@@ -68,6 +68,16 @@ return [
             'transaction_type' => (int) env('NASS_TRANSACTION_TYPE', 1),
             'callback_url'     => env('NASS_CALLBACK_URL'),
             'return_url'       => env('NASS_RETURN_URL'),
+        ],
+        'nasswallet' => [
+            'driver'          => 'nasswallet',
+            'base_url'        => env('NASSWALLET_BASE_URL', 'https://uatgw1.nasswallet.com'),
+            'portal_url'      => env('NASSWALLET_PORTAL_URL', 'https://uatcheckout1.nasswallet.com'),
+            'basic_token'     => env('NASSWALLET_BASIC_TOKEN', 'TUVSQ0hBVlRfUEFZTUVOVF9HQVRFV0FZOk1lcmNoYW50R2F0ZXdheUBBZG1pbiMxMjM='),
+            'username'        => env('NASSWALLET_USERNAME'),
+            'password'        => env('NASSWALLET_PASSWORD'),
+            'transaction_pin' => env('NASSWALLET_TRANSACTION_PIN'),
+            'callback_url'    => env('NASSWALLET_CALLBACK_URL'),
         ],
     ],
 ];
