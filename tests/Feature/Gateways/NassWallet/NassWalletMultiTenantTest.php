@@ -30,12 +30,12 @@ beforeEach(function () {
  */
 it('keeps two NassWallet merchants isolated — each logs in with its own username', function () {
     config()->set('parakit.gateways.nasswallet_a', [
-        'driver' => 'nasswallet', 'base_url' => 'https://uatgw1.nasswallet.com',
+        'driver' => 'nasswallet', 'base_url' => 'https://uatgw1.nasswallet.com/payment/transaction',
         'portal_url' => 'https://uatcheckout1.nasswallet.com', 'basic_token' => 'BT',
         'username' => 'MERCHANT-A', 'password' => 'pw-a', 'transaction_pin' => '1111',
     ]);
     config()->set('parakit.gateways.nasswallet_b', [
-        'driver' => 'nasswallet', 'base_url' => 'https://uatgw1.nasswallet.com',
+        'driver' => 'nasswallet', 'base_url' => 'https://uatgw1.nasswallet.com/payment/transaction',
         'portal_url' => 'https://uatcheckout1.nasswallet.com', 'basic_token' => 'BT',
         'username' => 'MERCHANT-B', 'password' => 'pw-b', 'transaction_pin' => '2222',
     ]);

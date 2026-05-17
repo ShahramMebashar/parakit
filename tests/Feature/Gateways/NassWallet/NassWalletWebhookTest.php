@@ -12,7 +12,7 @@ beforeEach(function () {
     $this->artisan('migrate');
     config()->set('parakit.gateways.nasswallet', [
         'driver'      => 'nasswallet',
-        'base_url'    => 'https://uatgw1.nasswallet.com',
+        'base_url'    => 'https://uatgw1.nasswallet.com/payment/transaction',
         'portal_url'  => 'https://uatcheckout1.nasswallet.com',
         'basic_token' => 'BASIC_TOKEN',
         'username'    => '7500077974',

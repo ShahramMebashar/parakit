@@ -71,9 +71,12 @@ return [
         ],
         'nasswallet' => [
             'driver'          => 'nasswallet',
-            'base_url'        => env('NASSWALLET_BASE_URL', 'https://uatgw1.nasswallet.com'),
+            // Full endpoint base — the path differs by environment:
+            //   UAT  https://uatgw1.nasswallet.com/payment/transaction
+            //   PROD https://gw-api.nasswallet.com/phase3/payment/transaction
+            'base_url'        => env('NASSWALLET_BASE_URL', 'https://uatgw1.nasswallet.com/payment/transaction'),
             'portal_url'      => env('NASSWALLET_PORTAL_URL', 'https://uatcheckout1.nasswallet.com'),
-            'basic_token'     => env('NASSWALLET_BASIC_TOKEN', 'TUVSQ0hBVlRfUEFZTUVOVF9HQVRFV0FZOk1lcmNoYW50R2F0ZXdheUBBZG1pbiMxMjM='),
+            'basic_token'     => env('NASSWALLET_BASIC_TOKEN', 'TUVSQ0hBTlRfUEFZTUVOVF9HQVRFV0FZOk1lcmNoYW50R2F0ZXdheUBBZG1pbiMxMjM='),
             'username'        => env('NASSWALLET_USERNAME'),
             'password'        => env('NASSWALLET_PASSWORD'),
             'transaction_pin' => env('NASSWALLET_TRANSACTION_PIN'),

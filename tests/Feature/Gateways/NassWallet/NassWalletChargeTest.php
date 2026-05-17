@@ -13,7 +13,7 @@ beforeEach(function () {
     $this->artisan('migrate');
     config()->set('parakit.gateways.nasswallet', [
         'driver'          => 'nasswallet',
-        'base_url'        => 'https://uatgw1.nasswallet.com',
+        'base_url'        => 'https://uatgw1.nasswallet.com/payment/transaction',
         'portal_url'      => 'https://uatcheckout1.nasswallet.com',
         'basic_token'     => 'BASIC_TOKEN',
         'username'        => '7500077974',
@@ -71,7 +71,8 @@ it('sends a numeric orderId, a 2-decimal amount and the merchant credentials', f
         }
         $data = $req['data'];
 
-        return ctype_digit((string) $data['orderId'])
+        return str_contains($req->url(), '/payment/transaction/initTransaction')
+            && ctype_digit((string) $data['orderId'])
             && $data['amount'] === '5000.00'
             && $data['userIdentifier'] === '7500077974'
             && $data['transactionPin'] === '135758'
