@@ -4,6 +4,30 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-05-17
+
+### Added
+- Nass Pay driver: bearer-token cache with automatic re-login on 401, typed HTTP client, charge flow with driver registration, transaction status check, and webhook handling re-verified via `checkStatus`.
+- Nass `responseCode` maps to `PaymentStatus` and `PaymentErrorCode`, plus a currency-code map.
+
+### Changed
+- FIB driver: completed field coverage against the official create-payment spec and corrected the gateway against current FIB docs.
+
+## [0.4.0] — 2026-05-16
+
+### Added
+- ZainCash v2 rewrite: OAuth2 `client_credentials` token cache, v2 HTTP client (init/inquiry/reverse), hosted-page redirect charge, transaction inquiry, full reversal/refund, and webhook/redirect callback verification.
+- Decode-only JWT verifier and v2 config block for ZainCash.
+
+### Security
+- CI workflow now declares explicit `permissions` (code-scanning alert fix).
+
+## [0.3.0] — 2026-05-15
+
+### Changed
+- Renamed the package namespace to `Froshly` and migrated the test suite accordingly.
+- `composer.json` now supports Laravel 13 with updated Testbench compatibility.
+
 ## [0.2.0] — 2026-05-15
 
 ### Added
