@@ -4,8 +4,10 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 
 ## [Unreleased]
 
-### Added
-- FastPay driver: hosted-page redirect charge, status check, and partial refund. FastPay authenticates with `store_id`/`store_password` per request (no token cache); the unsigned IPN webhook is re-verified server-to-server via the `payment/validate` endpoint, and refunds look up the original payer's mobile number before pushing funds back.
+## [0.5.1] — 2026-05-17
+
+### Security
+- Webhook amount integrity: `WebhookProcessor` now compares a `Paid` webhook's amount against the stored transaction amount. A non-zero mismatch is logged as `parakit.webhook.amount_mismatch`; the new `parakit.webhooks.on_amount_mismatch` setting (`log` default, or `reject`) controls whether the transition is still applied. A reported amount of `0` is treated as "not reported" and never flagged. (#5)
 
 ## [0.5.0] — 2026-05-17
 

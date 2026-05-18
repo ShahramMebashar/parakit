@@ -8,6 +8,11 @@ return [
         'route_prefix' => 'payments/webhooks',
         'middleware' => ['api'],
         'tolerance_seconds' => 300,
+
+        // Action when a Paid webhook's amount disagrees with the charged
+        // amount: 'log' records a parakit.webhook.amount_mismatch warning and
+        // still applies the transition; 'reject' refuses the transition.
+        'on_amount_mismatch' => env('PARAKIT_WEBHOOK_ON_AMOUNT_MISMATCH', 'log'),
     ],
 
     'reliability' => [
