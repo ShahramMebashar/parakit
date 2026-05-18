@@ -4,6 +4,11 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-05-19
+
+### Added
+- FastPay driver: hosted-page charge, transaction status check, refund, and IPN webhook handling, with driver registration. (#7)
+
 ## [0.5.1] — 2026-05-17
 
 ### Security
