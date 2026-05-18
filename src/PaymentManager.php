@@ -7,6 +7,7 @@ use Closure;
 use Illuminate\Contracts\Container\Container;
 use Froshly\Parakit\Contracts\PaymentGateway;
 use Froshly\Parakit\Exceptions\UnsupportedGatewayException;
+use Froshly\Parakit\Gateways\FastPay\FastPayGateway;
 use Froshly\Parakit\Gateways\Fib\FibGateway;
 use Froshly\Parakit\Gateways\Nass\NassGateway;
 use Froshly\Parakit\Gateways\ZainCash\ZainCashGateway;
@@ -101,6 +102,11 @@ class PaymentManager
     protected function createNassDriver(array $cfg, string $name): PaymentGateway
     {
         return new NassGateway($name, $cfg);
+    }
+
+    protected function createFastpayDriver(array $cfg, string $name): PaymentGateway
+    {
+        return new FastPayGateway($name, $cfg);
     }
 
     /** @param array<string,mixed> $cfg */

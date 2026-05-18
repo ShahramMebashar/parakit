@@ -1,0 +1,16 @@
+{
+    "code": 200,
+    "messages": [
+        "messages.successfully_refund"
+    ],
+    "data": {
+        "summary": {
+            "recipient": {
+                "name": "PM Team 2",
+                "mobile_number": "+9641000000004",
+                "avatar": "https://staging-asset.fast-pay.iq/users/photos/thumbnails/sample.jpeg"
+            },
+            "invoice_id": "CXMNPZQ030"
+        }
+    }
+}
