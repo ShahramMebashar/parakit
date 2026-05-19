@@ -1,7 +1,9 @@
 <?php
 declare(strict_types=1);
 
+use Froshly\Parakit\Events\CircuitOpened;
 use Froshly\Parakit\Support\CircuitBreaker;
+use Illuminate\Support\Facades\Event;
 
 beforeEach(fn () => cache()->flush());
 
@@ -38,4 +40,18 @@ it('does not lose the first failure when the cache key did not previously exist'
     $cb = new CircuitBreaker('fib', threshold: 1, cooldownSeconds: 60);
     $cb->recordFailure();
     expect($cb->isOpen())->toBeTrue();
+});
+
+it('dispatches CircuitOpened once, on the failure that trips the breaker open', function () {
+    Event::fake([CircuitOpened::class]);
+    $cb = new CircuitBreaker('fib', threshold: 2, cooldownSeconds: 60);
+
+    $cb->recordFailure();              // below threshold — no event
+    Event::assertNotDispatched(CircuitOpened::class);
+
+    $cb->recordFailure();              // trips open — one event
+    $cb->recordFailure();              // already open — must not re-dispatch
+
+    Event::assertDispatchedTimes(CircuitOpened::class, 1);
+    Event::assertDispatched(CircuitOpened::class, fn (CircuitOpened $e) => $e->gateway === 'fib');
 });

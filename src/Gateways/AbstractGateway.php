@@ -11,7 +11,9 @@ use Froshly\Parakit\DTOs\PaymentRequest;
 use Froshly\Parakit\DTOs\PaymentResponse;
 use Froshly\Parakit\DTOs\WebhookPayload;
 use Froshly\Parakit\Enums\PaymentStatus;
+use Froshly\Parakit\Events\GatewayTimeout;
 use Froshly\Parakit\Events\PaymentInitiated;
+use Froshly\Parakit\Exceptions\GatewayTimeoutException;
 use Froshly\Parakit\Exceptions\GatewayUnavailableException;
 use Froshly\Parakit\Models\PaymentTransaction;
 use Froshly\Parakit\Support\CircuitBreaker;
@@ -86,6 +88,12 @@ abstract class AbstractGateway implements PaymentGateway
                 Cache::put($cacheKey, $response, $ttl);
                 return $response;
             } catch (GatewayUnavailableException $e) {
+                // A timeout is a GatewayUnavailableException subtype — it stays
+                // retryable, and additionally surfaces a GatewayTimeout event
+                // carrying which endpoint stalled and for how long.
+                if ($e instanceof GatewayTimeoutException) {
+                    event(new GatewayTimeout($this->gatewayName, $e->endpoint, $e->durationMs));
+                }
                 $this->breaker->recordFailure();
                 if ($attempt >= $maxAttempts) {
                     $this->markFailed($tx);

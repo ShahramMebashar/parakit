@@ -6,6 +6,7 @@ namespace Froshly\Parakit\Gateways\NassWallet;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Froshly\Parakit\Exceptions\GatewayTimeoutException;
 use Froshly\Parakit\Exceptions\GatewayUnavailableException;
 use Froshly\Parakit\Exceptions\PaymentException;
 
@@ -79,6 +80,7 @@ final class NassWalletClient
      */
     private function dispatch(string $uri, array $data, string $token): Response
     {
+        $start = hrtime(true);
         try {
             return Http::baseUrl(rtrim($this->baseUrl, '/'))
                 ->withToken($token)
@@ -87,10 +89,12 @@ final class NassWalletClient
                 ->asJson()
                 ->post($uri, ['data' => $data]);
         } catch (ConnectionException $e) {
-            // Network/timeout failure — retryable.
-            throw new GatewayUnavailableException(
-                "NassWallet {$uri} unreachable: {$e->getMessage()}",
-                0,
+            // Network/timeout failure — retryable, and surfaced as a timeout
+            // so AbstractGateway can dispatch a GatewayTimeout event.
+            throw new GatewayTimeoutException(
+                $uri,
+                (int) ((hrtime(true) - $start) / 1_000_000),
+                "NassWallet {$uri} timed out: {$e->getMessage()}",
                 $e,
             );
         }

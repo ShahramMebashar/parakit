@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Froshly\Parakit\Support;
 
+use Froshly\Parakit\Events\CircuitOpened;
 use Illuminate\Support\Facades\Cache;
 
 final class CircuitBreaker
@@ -35,7 +36,13 @@ final class CircuitBreaker
         Cache::add($this->failsKey(), 0, $this->cooldownSeconds + 300);
         $fails = (int) Cache::increment($this->failsKey());
         if ($fails >= $this->threshold) {
+            // Dispatch CircuitOpened only on the open transition — not on
+            // every further failure recorded while the breaker is already open.
+            $alreadyOpen = Cache::get($this->openedKey()) !== null;
             Cache::put($this->openedKey(), time(), $this->cooldownSeconds + 60);
+            if (!$alreadyOpen) {
+                event(new CircuitOpened($this->gateway));
+            }
         }
     }
 

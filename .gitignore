@@ -1,5 +1,4 @@
 /vendor
-/docs
 composer.lock
 .phpunit.cache
 .phpunit.result.cache
@@ -10,3 +9,11 @@ composer.lock
 
 # Local receipt design previews
 preview-output/
+
+# VitePress — build output, cache, and node deps (the doc site source IS tracked)
+node_modules/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+
+# Untracked design specs / internal notes
+docs/.specs/

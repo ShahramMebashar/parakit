@@ -59,3 +59,59 @@ it('posts an unsigned id/status body for FIB (FIB callbacks are unsigned)', func
         && $req['id'] === 'pid_1'
         && $req['status'] === 'PAID');
 });
+
+it('posts an orderId body to the NassPay webhook route', function () {
+    config()->set('parakit.gateways.nass', [
+        'driver' => 'nass',
+        'base_url' => 'https://uat-gateway.nass.iq:9746',
+        'username' => 'u', 'password' => 'p',
+    ]);
+    Http::fake(['*' => Http::response('ok', 200)]);
+
+    $this->artisan('parakit:webhook:simulate', [
+        'gateway' => 'nass',
+        '--transaction-id' => 'nass_1',
+    ])->assertSuccessful();
+
+    Http::assertSent(fn ($req) =>
+        str_contains($req->url(), 'payments/webhooks/nass')
+        && $req['orderId'] === 'nass_1');
+});
+
+it('posts to the NassWallet /callback route with a nested data envelope', function () {
+    config()->set('parakit.gateways.nasswallet', [
+        'driver' => 'nasswallet',
+        'base_url' => 'https://uatgw1.nasswallet.com/payment/transaction',
+        'portal_url' => 'https://uatcheckout1.nasswallet.com',
+        'basic_token' => 'BASIC_TOKEN',
+        'username' => '7500077974', 'password' => 'secret',
+    ]);
+    Http::fake(['*' => Http::response('ok', 200)]);
+
+    $this->artisan('parakit:webhook:simulate', [
+        'gateway' => 'nasswallet',
+        '--transaction-id' => 'nw_1',
+    ])->assertSuccessful();
+
+    Http::assertSent(fn ($req) =>
+        str_contains($req->url(), 'payments/webhooks/nasswallet/callback')
+        && $req['data']['InitTransactionId'] === 'nw_1');
+});
+
+it('posts an order_id body to the FastPay webhook route', function () {
+    config()->set('parakit.gateways.fastpay', [
+        'driver' => 'fastpay',
+        'base_url' => 'https://staging-pgw.fast-pay.iq',
+        'store_id' => 'STORE-1', 'store_password' => 'secret-1',
+    ]);
+    Http::fake(['*' => Http::response('ok', 200)]);
+
+    $this->artisan('parakit:webhook:simulate', [
+        'gateway' => 'fastpay',
+        '--transaction-id' => 'fp_1',
+    ])->assertSuccessful();
+
+    Http::assertSent(fn ($req) =>
+        str_contains($req->url(), 'payments/webhooks/fastpay')
+        && $req['order_id'] === 'fp_1');
+});

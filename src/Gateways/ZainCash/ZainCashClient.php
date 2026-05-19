@@ -3,8 +3,11 @@ declare(strict_types=1);
 
 namespace Froshly\Parakit\Gateways\ZainCash;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Froshly\Parakit\Exceptions\GatewayTimeoutException;
 use Froshly\Parakit\Exceptions\GatewayUnavailableException;
 
 /**
@@ -28,7 +31,7 @@ final class ZainCashClient
      */
     public function init(array $payload): array
     {
-        $res = $this->client()->post('/api/v2/payment-gateway/transaction/init', $payload);
+        $res = $this->send('POST', '/api/v2/payment-gateway/transaction/init', $payload);
         if (!$res->successful()) {
             throw new GatewayUnavailableException("ZainCash init failed: HTTP {$res->status()}");
         }
@@ -39,7 +42,7 @@ final class ZainCashClient
     /** @return array<string, mixed> */
     public function inquiry(string $transactionId): array
     {
-        $res = $this->client()->get("/api/v2/payment-gateway/transaction/inquiry/{$transactionId}");
+        $res = $this->send('GET', "/api/v2/payment-gateway/transaction/inquiry/{$transactionId}");
         if (!$res->successful()) {
             throw new GatewayUnavailableException("ZainCash inquiry failed: HTTP {$res->status()}");
         }
@@ -50,7 +53,7 @@ final class ZainCashClient
     /** @return array<string, mixed> */
     public function reverse(string $transactionId, string $reason): array
     {
-        $res = $this->client()->post('/api/v2/payment-gateway/transaction/reverse', [
+        $res = $this->send('POST', '/api/v2/payment-gateway/transaction/reverse', [
             'transactionId' => $transactionId,
             'reason' => $reason,
         ]);
@@ -59,6 +62,32 @@ final class ZainCashClient
         }
         $json = $res->json();
         return is_array($json) ? $json : [];
+    }
+
+    /**
+     * Single HTTP chokepoint. A connection timeout (here or while fetching the
+     * OAuth2 token) is surfaced as a GatewayTimeoutException so the retry loop
+     * stays engaged and AbstractGateway can dispatch a GatewayTimeout event.
+     *
+     * @param array<string, mixed>|null $payload
+     */
+    private function send(string $verb, string $uri, ?array $payload = null): Response
+    {
+        $start = hrtime(true);
+        try {
+            $request = $this->client();
+
+            return $verb === 'GET'
+                ? $request->get($uri)
+                : $request->post($uri, $payload ?? []);
+        } catch (ConnectionException $e) {
+            throw new GatewayTimeoutException(
+                $uri,
+                (int) ((hrtime(true) - $start) / 1_000_000),
+                "ZainCash {$uri} timed out: {$e->getMessage()}",
+                $e,
+            );
+        }
     }
 
     private function client(): PendingRequest
