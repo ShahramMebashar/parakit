@@ -17,7 +17,6 @@ return [
     'description'    => 'Description',
     'amount'         => 'Amount',
     'refunded'       => 'Refunded',
-    'net'            => 'Net',
     'total_paid'     => 'Total paid',
     'total_refunded' => 'Total refunded',
 

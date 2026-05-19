@@ -106,7 +106,6 @@ final class ReceiptManager
         // A payment receipt never shows refund figures, even on a row that was
         // later refunded — it documents the payment as it stood.
         $refunded = $type === ReceiptType::Refund ? (int) $tx->refunded_amount : 0;
-        $net = $amount - $refunded;
 
         $isPartialRefund = $type === ReceiptType::Refund
             && $refunded > 0
@@ -127,8 +126,6 @@ final class ReceiptManager
             amountFormatted: Money::format($amount, $tx->currency),
             refundedMinor: $refunded,
             refundedFormatted: Money::format($refunded, $tx->currency),
-            netMinor: $net,
-            netFormatted: Money::format($net, $tx->currency),
             isPartialRefund: $isPartialRefund,
             // Explicit customer details win; metadata is the fallback.
             customerName: $customer->name ?? $this->metaString($meta, $keys['name_key'] ?? 'customer_name'),
@@ -145,7 +142,7 @@ final class ReceiptManager
     /** Render the receipt's Blade view to HTML, scoped to the receipt locale. */
     private function renderHtml(ReceiptData $data, string $template, string $locale): string
     {
-        $view = "parakit::receipts.{$template}.{$data->type->viewKey()}";
+        $view = "parakit::receipts.{$template}.{$data->type->value}";
         $previous = App::getLocale();
 
         App::setLocale($locale);

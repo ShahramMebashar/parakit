@@ -5,6 +5,9 @@
     $accent = '#4f46e5';
     $title  = __($refund ? 'parakit::receipts.title_refund' : 'parakit::receipts.title_payment');
     $status = __('parakit::payments.statuses.' . $receipt->status->value);
+    $customerParts = array_values(array_filter([
+        $receipt->customerName, $receipt->customerEmail, $receipt->customerPhone,
+    ]));
 @endphp
 <!DOCTYPE html>
 <html dir="{{ $rtl ? 'rtl' : 'ltr' }}" lang="{{ $receipt->locale }}">
@@ -83,14 +86,14 @@
                 <div class="value">{{ ($receipt->paidAt ?? $receipt->issuedAt)->format('Y-m-d H:i') }}</div>
             </td>
         </tr>
-        @if($receipt->customerName || $receipt->customerEmail)
+        @if($receipt->hasCustomer())
         <tr>
             <td colspan="2">
                 <div class="label">{{ __('parakit::receipts.billed_to') }}</div>
-                <div class="value">{{ $receipt->customerName ?? $receipt->customerEmail }}</div>
-                @if($receipt->customerName && $receipt->customerEmail)
-                    <div class="muted">{{ $receipt->customerEmail }}</div>
-                @endif
+                <div class="value">{{ $customerParts[0] }}</div>
+                @foreach(array_slice($customerParts, 1) as $line)
+                    <div class="muted">{{ $line }}</div>
+                @endforeach
             </td>
         </tr>
         @endif

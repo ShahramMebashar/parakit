@@ -39,11 +39,6 @@ final readonly class CustomerDetails
         return $customer instanceof self ? $customer : self::fromArray($customer);
     }
 
-    public function isEmpty(): bool
-    {
-        return $this->name === null && $this->email === null && $this->phone === null;
-    }
-
     private static function str(mixed $value): ?string
     {
         return (is_string($value) && $value !== '') ? $value : null;

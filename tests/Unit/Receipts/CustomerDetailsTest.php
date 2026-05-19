@@ -21,8 +21,3 @@ it('wraps an array but passes a DTO straight through', function () {
     expect(CustomerDetails::wrap($dto))->toBe($dto)
         ->and(CustomerDetails::wrap(['name' => 'Grace'])->name)->toBe('Grace');
 });
-
-it('reports emptiness', function () {
-    expect((new CustomerDetails())->isEmpty())->toBeTrue()
-        ->and((new CustomerDetails(email: 'a@b.c'))->isEmpty())->toBeFalse();
-});

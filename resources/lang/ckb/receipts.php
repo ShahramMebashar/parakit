@@ -17,7 +17,6 @@ return [
     'description'    => 'وەسف',
     'amount'         => 'بڕ',
     'refunded'       => 'گەڕێنراوەتەوە',
-    'net'            => 'پاک',
     'total_paid'     => 'کۆی پارەدراو',
     'total_refunded' => 'کۆی گەڕێنراوە',
 

@@ -5,6 +5,9 @@
     $title  = __($refund ? 'parakit::receipts.title_refund' : 'parakit::receipts.title_payment');
     $status = __('parakit::payments.statuses.' . $receipt->status->value);
     $end    = $rtl ? 'left' : 'right';
+    $customerParts = array_filter([
+        $receipt->customerName, $receipt->customerEmail, $receipt->customerPhone,
+    ]);
 @endphp
 <!DOCTYPE html>
 <html dir="{{ $rtl ? 'rtl' : 'ltr' }}" lang="{{ $receipt->locale }}">
@@ -61,10 +64,10 @@
             <td class="k">{{ $receipt->paidAt ? __('parakit::receipts.paid_at') : __('parakit::receipts.issued') }}</td>
             <td class="v">{{ ($receipt->paidAt ?? $receipt->issuedAt)->format('Y-m-d H:i') }}</td>
         </tr>
-        @if($receipt->customerName || $receipt->customerEmail)
+        @if($receipt->hasCustomer())
         <tr class="hair">
             <td class="k">{{ __('parakit::receipts.customer') }}</td>
-            <td class="v">{{ $receipt->customerName ?? $receipt->customerEmail }}</td>
+            <td class="v">{{ implode(' · ', $customerParts) }}</td>
         </tr>
         @endif
         @if($refund)

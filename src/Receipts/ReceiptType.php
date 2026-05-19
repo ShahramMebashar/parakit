@@ -3,14 +3,14 @@ declare(strict_types=1);
 
 namespace Froshly\Parakit\Receipts;
 
+/**
+ * The kind of receipt being produced.
+ *
+ * The case value doubles as the Blade view suffix — a receipt renders
+ * through parakit::receipts.{template}.{value}.
+ */
 enum ReceiptType: string
 {
     case Payment = 'payment';
     case Refund = 'refund';
-
-    /** The view suffix resolved as parakit::receipts.{template}.{viewKey}. */
-    public function viewKey(): string
-    {
-        return $this->value;
-    }
 }

@@ -3,13 +3,12 @@ declare(strict_types=1);
 
 namespace Froshly\Parakit\Receipts;
 
-use Froshly\Parakit\Exceptions\PaymentException;
-
 /**
  * The only dompdf-aware class in the package.
  *
  * Everything else depends on this thin seam, so dompdf can be swapped or
- * mocked without touching receipt generation logic.
+ * mocked without touching receipt generation logic. dompdf ships as a hard
+ * dependency, so `dompdf.wrapper` is always bound via package discovery.
  */
 class PdfRenderer
 {
@@ -23,12 +22,6 @@ class PdfRenderer
     /** Render an HTML document to raw PDF bytes. */
     public function render(string $html): string
     {
-        if (!app()->bound('dompdf.wrapper')) {
-            throw new PaymentException(
-                'PDF receipts require barryvdh/laravel-dompdf. Run "composer require barryvdh/laravel-dompdf".'
-            );
-        }
-
         $pdf = app('dompdf.wrapper');
 
         if (!empty($this->config['options'])) {

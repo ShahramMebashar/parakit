@@ -17,7 +17,6 @@ return [
     'description'    => 'الوصف',
     'amount'         => 'المبلغ',
     'refunded'       => 'المسترد',
-    'net'            => 'الصافي',
     'total_paid'     => 'إجمالي المدفوع',
     'total_refunded' => 'إجمالي المسترد',
 

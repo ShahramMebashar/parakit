@@ -27,8 +27,6 @@ final readonly class ReceiptData
         public string $amountFormatted,
         public int $refundedMinor,
         public string $refundedFormatted,
-        public int $netMinor,
-        public string $netFormatted,
         public bool $isPartialRefund,
         public ?string $customerName,
         public ?string $customerEmail,
