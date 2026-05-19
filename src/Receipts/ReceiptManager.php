@@ -50,10 +50,9 @@ final class ReceiptManager
         $locale = $this->resolveLocale($tx, $config, $locale);
         $data = $this->buildData($tx, $type, $locale, $config, CustomerDetails::wrap($customer));
 
-        $renderer = fn (): string => $this->app->make(PdfRenderer::class)
-            ->render($this->renderHtml($data, $template, $locale));
+        $htmlRenderer = fn (): string => $this->renderHtml($data, $template, $locale);
 
-        return new ReceiptDocument($data, $renderer, $config);
+        return new ReceiptDocument($data, $htmlRenderer, $this->app->make(PdfRenderer::class), $config);
     }
 
     /** @throws InvalidArgumentException on an unknown template name. */

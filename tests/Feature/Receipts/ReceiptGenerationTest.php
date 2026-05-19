@@ -44,6 +44,12 @@ it('generates a real PDF document', function () {
         ->and($doc->raw())->toStartWith('%PDF-');
 });
 
+it('exposes rendered HTML without invoking dompdf', function () {
+    $html = Receipt::for(makeTx())->generate()->html();
+
+    expect($html)->toContain('<!DOCTYPE html>')->toContain('ord_1024');
+});
+
 it('renders a payment receipt through every shipped template', function (string $template) {
     $rec = recorder();
 

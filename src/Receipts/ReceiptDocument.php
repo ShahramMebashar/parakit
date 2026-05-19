@@ -19,22 +19,30 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 final class ReceiptDocument
 {
+    private ?string $html = null;
     private ?string $pdf = null;
 
     /**
-     * @param Closure():string    $renderer Produces the raw PDF bytes.
-     * @param array<string,mixed> $config   The parakit.receipts config block.
+     * @param Closure():string    $htmlRenderer Produces the receipt HTML.
+     * @param array<string,mixed> $config       The parakit.receipts config block.
      */
     public function __construct(
         public readonly ReceiptData $data,
-        private readonly Closure $renderer,
+        private readonly Closure $htmlRenderer,
+        private readonly PdfRenderer $pdfRenderer,
         private readonly array $config = [],
     ) {}
+
+    /** Rendered receipt HTML (rendered once, then memoised). */
+    public function html(): string
+    {
+        return $this->html ??= ($this->htmlRenderer)();
+    }
 
     /** Raw PDF bytes (rendered once, then memoised). */
     public function raw(): string
     {
-        return $this->pdf ??= ($this->renderer)();
+        return $this->pdf ??= $this->pdfRenderer->render($this->html());
     }
 
     public function filename(): string

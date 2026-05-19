@@ -169,6 +169,7 @@ Other events: `PaymentInitiated`, `PaymentFailed`, `PaymentCancelled`, `PaymentR
 | `parakit:sweep-pending` | Polls status for pending transactions to recover lost webhooks. Auto-scheduled every 5 min. |
 | `parakit:webhook:simulate fib --transaction-id=pid_1 --status=paid` | POSTs a correctly-formed test webhook to your local app. |
 | `parakit:logs:prune --days=90` | Trims `payment_logs` per retention policy. Auto-scheduled daily. |
+| `parakit:receipt:preview --all` | Renders sample receipts (every template/type/locale) to disk for previewing designs. `--format=html\|pdf`. |
 
 ---
 
@@ -210,6 +211,16 @@ $bytes = $pdf->raw();        // raw PDF bytes
   currency. Locale resolves from `->locale()`, transaction metadata, then config.
 - **Customer details** — pass a `CustomerDetails` DTO or an array; anything you
   omit falls back to the transaction's `metadata`.
+
+Iterating on a design? Render samples to disk with no real payment needed:
+
+```bash
+php artisan parakit:receipt:preview --template=modern --locale=ckb   # one
+php artisan parakit:receipt:preview --all --format=html              # the lot
+```
+
+`--format=html` is fastest for layout work (open in a browser); `--format=pdf`
+shows true dompdf fidelity.
 
 Emailing a receipt is intentionally left to your application — Parakit produces
 the PDF, your app decides how it reaches the customer.
