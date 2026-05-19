@@ -1,0 +1,9 @@
+{
+    "code": 200,
+    "messages": [
+        "Payment Initiation request processed successfully."
+    ],
+    "data": {
+        "redirect_uri": "https://staging-pgw.fast-pay.iq/pay?token=3ae4e9cd-7267-466b-ad67-7b2fd9979bb4"
+    }
+}
