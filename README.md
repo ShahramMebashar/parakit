@@ -5,7 +5,7 @@
 [![CI](https://github.com/ShahramMebashar/parakit/actions/workflows/ci.yml/badge.svg)](https://github.com/ShahramMebashar/parakit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Take payments from Iraqi and Kurdish customers in a Laravel app — **FIB**, **ZainCash** — with idempotent webhooks, retry & circuit-breaker, redacted logging, a sweeper for lost webhooks, and three localised UIs (en/ar/ckb) out of the box.
+Take payments from Iraqi and Kurdish customers in a Laravel app — **FIB**, **ZainCash**, **Nass Pay**, **Nass Wallet**, **FastPay** — with idempotent webhooks, retry & circuit-breaker, redacted logging, a sweeper for lost webhooks, and three localised UIs (en/ar/ckb) out of the box.
 
 `composer require` → first sandbox charge in under 15 minutes. That's the goal.
 
@@ -44,11 +44,33 @@ FIB_CLIENT_ID=your-fib-client-id
 FIB_CLIENT_SECRET=your-fib-client-secret
 FIB_CALLBACK_URL=https://yourapp.com/payments/webhooks/fib
 
-ZAINCASH_BASE_URL=https://test.zaincash.iq
-ZAINCASH_MERCHANT_ID=your-merchant-id
-ZAINCASH_MSISDN=07xxxxxxxxx
-ZAINCASH_SECRET=your-32-byte-or-longer-secret
-ZAINCASH_REDIRECT_URL=https://yourapp.com/payments/zaincash/return
+ZAINCASH_BASE_URL=https://pg-api-uat.zaincash.iq
+ZAINCASH_CLIENT_ID=your-client-id
+ZAINCASH_CLIENT_SECRET=your-client-secret
+ZAINCASH_API_KEY=your-api-key
+ZAINCASH_SUCCESS_URL=https://yourapp.com/payments/zaincash/return
+ZAINCASH_FAILURE_URL=https://yourapp.com/payments/zaincash/failed
+
+NASS_BASE_URL=https://uat-gateway.nass.iq:9746
+NASS_USERNAME=your-nass-username
+NASS_PASSWORD=your-nass-password
+NASS_CALLBACK_URL=https://yourapp.com/payments/webhooks/nass
+NASS_RETURN_URL=https://yourapp.com/payments/nass/return
+
+NASSWALLET_BASE_URL=https://uatgw1.nasswallet.com/payment/transaction
+NASSWALLET_PORTAL_URL=https://uatcheckout1.nasswallet.com
+NASSWALLET_USERNAME=your-nasswallet-username
+NASSWALLET_PASSWORD=your-nasswallet-password
+NASSWALLET_TRANSACTION_PIN=your-transaction-pin
+NASSWALLET_CALLBACK_URL=https://yourapp.com/payments/webhooks/nasswallet
+
+FASTPAY_BASE_URL=https://staging-pgw.fast-pay.iq
+FASTPAY_STORE_ID=your-store-id
+FASTPAY_STORE_PASSWORD=your-store-password
+FASTPAY_REFUND_SECRET_KEY=your-refund-secret-key
+FASTPAY_SUCCESS_URL=https://yourapp.com/payments/fastpay/return
+FASTPAY_CANCEL_URL=https://yourapp.com/payments/fastpay/cancel
+FASTPAY_CALLBACK_URL=https://yourapp.com/payments/webhooks/fastpay
 ```
 
 Verify everything is wired:
