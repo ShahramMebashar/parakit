@@ -7,3 +7,6 @@ composer.lock
 .idea
 .vscode
 .DS_Store
+
+# Local receipt design previews
+preview-output/
