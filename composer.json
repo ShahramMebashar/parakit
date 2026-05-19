@@ -9,7 +9,8 @@
     "illuminate/database": "^11.0 || ^12.0 || ^13.0",
     "illuminate/http": "^11.0 || ^12.0 || ^13.0",
     "illuminate/support": "^11.0 || ^12.0 || ^13.0",
-    "firebase/php-jwt": "^7.0"
+    "firebase/php-jwt": "^7.0",
+    "barryvdh/laravel-dompdf": "^3.0"
   },
   "require-dev": {
     "orchestra/testbench": "^9.0 || ^10.0 || ^11.0",
@@ -27,7 +28,10 @@
   "extra": {
     "laravel": {
       "providers": ["Froshly\\Parakit\\ParakitServiceProvider"],
-      "aliases": { "Payment": "Froshly\\Parakit\\Facades\\Payment" }
+      "aliases": {
+        "Payment": "Froshly\\Parakit\\Facades\\Payment",
+        "Receipt": "Froshly\\Parakit\\Facades\\Receipt"
+      }
     }
   },
   "scripts": {

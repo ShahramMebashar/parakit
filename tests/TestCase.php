@@ -10,7 +10,10 @@ abstract class TestCase extends Orchestra
 {
     protected function getPackageProviders($app): array
     {
-        return [ParakitServiceProvider::class];
+        return [
+            \Barryvdh\DomPDF\ServiceProvider::class,
+            ParakitServiceProvider::class,
+        ];
     }
 
     protected function defineEnvironment($app): void

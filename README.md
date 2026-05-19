@@ -18,6 +18,7 @@ Take payments from Iraqi and Kurdish customers in a Laravel app — **FIB**, **Z
 - [Receive a webhook](#receive-a-webhook)
 - [What you get for free](#what-you-get-for-free)
 - [Operations](#operations)
+- [Receipts](#receipts)
 - [Multi-tenant / multiple merchants](#multi-tenant--multiple-merchants)
   - [Credentials in a database — `resolveMerchantUsing()`](#credentials-in-a-database--resolvemerchantusing)
 - [Laravel Octane](#laravel-octane)
@@ -168,6 +169,50 @@ Other events: `PaymentInitiated`, `PaymentFailed`, `PaymentCancelled`, `PaymentR
 | `parakit:sweep-pending` | Polls status for pending transactions to recover lost webhooks. Auto-scheduled every 5 min. |
 | `parakit:webhook:simulate fib --transaction-id=pid_1 --status=paid` | POSTs a correctly-formed test webhook to your local app. |
 | `parakit:logs:prune --days=90` | Trims `payment_logs` per retention policy. Auto-scheduled daily. |
+
+---
+
+## Receipts
+
+Turn any transaction into a branded PDF receipt — no gateway involved, it reads
+the stored `payment_transactions` row.
+
+```php
+use Froshly\Parakit\Facades\Receipt;
+
+$transaction = PaymentTransaction::where('reference', $order->id)->firstOrFail();
+
+return Receipt::for($transaction)
+    ->template('modern')                 // modern (default) · classic · minimal
+    ->customer([
+        'name'  => $order->customer_name, // gateways rarely return these —
+        'email' => $order->customer_email,// pass what your app knows
+    ])
+    ->download();                         // → PDF download response
+```
+
+`generate()` returns a receipt document you deliver however you like:
+
+```php
+$pdf = Receipt::for($transaction)->generate();
+
+$pdf->stream();              // inline PDF response
+$pdf->download();            // attachment response
+$pdf->save('s3');            // persist to a disk, returns the path
+$bytes = $pdf->raw();        // raw PDF bytes
+```
+
+- **Refund receipts** — `Receipt::for($transaction)->asRefund()->generate()`.
+- **Templates** — three production-grade designs, selectable per call or via
+  `parakit.receipts.template`. Publish them to customise:
+  `php artisan vendor:publish --tag=parakit-views`.
+- **Localised** — renders in en / ar / ckb, RTL-aware, money formatted per
+  currency. Locale resolves from `->locale()`, transaction metadata, then config.
+- **Customer details** — pass a `CustomerDetails` DTO or an array; anything you
+  omit falls back to the transaction's `metadata`.
+
+Emailing a receipt is intentionally left to your application — Parakit produces
+the PDF, your app decides how it reaches the customer.
 
 ---
 

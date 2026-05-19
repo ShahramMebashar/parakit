@@ -14,6 +14,17 @@ class ParakitServiceProvider extends ServiceProvider
 
         $this->app->singleton(PaymentManager::class, fn ($app) => new PaymentManager($app));
         $this->app->alias(PaymentManager::class, 'parakit.manager');
+
+        $this->app->singleton(
+            \Froshly\Parakit\Receipts\PdfRenderer::class,
+            fn () => new \Froshly\Parakit\Receipts\PdfRenderer(config('parakit.receipts.pdf', [])),
+        );
+
+        $this->app->singleton(
+            \Froshly\Parakit\Receipts\ReceiptManager::class,
+            fn ($app) => new \Froshly\Parakit\Receipts\ReceiptManager($app),
+        );
+        $this->app->alias(\Froshly\Parakit\Receipts\ReceiptManager::class, 'parakit.receipts');
     }
 
     public function boot(): void
@@ -21,6 +32,7 @@ class ParakitServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
         $this->loadRoutesFrom(__DIR__ . '/../routes/webhooks.php');
         $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'parakit');
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'parakit');
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
@@ -34,6 +46,10 @@ class ParakitServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__ . '/../resources/lang' => $this->app->langPath('vendor/parakit'),
             ], 'parakit-lang');
+
+            $this->publishes([
+                __DIR__ . '/../resources/views' => resource_path('views/vendor/parakit'),
+            ], 'parakit-views');
 
             $this->commands([
                 \Froshly\Parakit\Console\InstallCommand::class,
