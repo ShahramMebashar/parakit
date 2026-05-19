@@ -6,13 +6,10 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 
 ## [0.7.1] — 2026-05-19
 
-### Fixed
-- Restore closing braces dropped during the gateway branch merge — `PaymentManager::createNasswalletDriver()` and the `nasswallet` config block — which made `v0.7.0` fail to parse.
-
-## [0.7.0] — 2026-05-19
-
 ### Added
 - Nass Wallet driver: hosted-portal charge, transaction status check, and callback webhook handling, with driver registration. (#8)
+
+> Supersedes the unreleased `0.7.0` tag, which was removed because a merge dropped closing braces in `PaymentManager` and the `nasswallet` config block, leaving it unparseable.
 
 ## [0.6.0] — 2026-05-19
 
