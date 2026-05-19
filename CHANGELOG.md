@@ -4,6 +4,11 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-05-19
+
+### Added
+- Nass Wallet driver: hosted-portal charge, transaction status check, and callback webhook handling, with driver registration. (#8)
+
 ## [0.6.0] — 2026-05-19
 
 ### Added
