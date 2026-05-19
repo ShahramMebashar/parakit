@@ -21,6 +21,7 @@ authoritative channel.)
 - **Secrets are redacted before they hit `payment_logs`**, by configured key names + a Luhn-gated PAN regex.
 - **Replay protection** rejects webhooks whose `occurredAt` is older than `parakit.webhooks.tolerance_seconds` (default 300s).
 - **DB-level webhook idempotency** via a unique index on `(gateway, event_id)` — race-safe under concurrent delivery.
+- **Webhook amount integrity** — a `Paid` webhook's amount is compared against the stored transaction amount; a non-zero mismatch is logged as `parakit.webhook.amount_mismatch`, and `parakit.webhooks.on_amount_mismatch` (`log` default, or `reject`) controls whether the transition still applies.
 - **Algorithm pinning** on JWT decode (HS256 only for ZainCash) to defend against `alg: none` confusion attacks.
 - **Correlation IDs are validated** against `^[A-Za-z0-9_-]{8,64}$` to prevent log-injection via client-supplied headers.
 
@@ -32,8 +33,10 @@ authoritative channel.)
 - Information disclosure (secret/PII leakage in logs, events, or responses)
 - Denial-of-service via webhook abuse, retry storms, or circuit-breaker bypass
 
-## What's out of scope for v0.1
+## What's out of scope (as of 0.7.x)
 
-- Per-merchant credential rotation tooling (planned v0.3)
+These are not yet implemented and carry no version commitment:
+
+- Per-merchant credential rotation tooling
 - Encrypted-at-rest token cache (currently relies on the host's cache-store ACLs)
 - Rate-limit tuning for the public webhook URL (use Laravel's `api` group throttle or your edge proxy)
