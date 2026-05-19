@@ -108,6 +108,8 @@ class PaymentManager
     protected function createNasswalletDriver(array $cfg, string $name): PaymentGateway
     {
         return new NassWalletGateway($name, $cfg);
+    }
+
     protected function createFastpayDriver(array $cfg, string $name): PaymentGateway
     {
         return new FastPayGateway($name, $cfg);

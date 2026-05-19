@@ -81,6 +81,7 @@ return [
             'password'        => env('NASSWALLET_PASSWORD'),
             'transaction_pin' => env('NASSWALLET_TRANSACTION_PIN'),
             'callback_url'    => env('NASSWALLET_CALLBACK_URL'),
+        ],
         'fastpay' => [
             'driver'            => 'fastpay',
             'base_url'          => env('FASTPAY_BASE_URL', 'https://staging-pgw.fast-pay.iq'),
