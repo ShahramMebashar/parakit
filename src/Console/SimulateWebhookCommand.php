@@ -16,14 +16,16 @@ class SimulateWebhookCommand extends Command
         {--reference=}
         {--transaction-id=}';
 
-    protected $description = 'Post a correctly-signed test webhook to your local app';
+    protected $description = 'Post a test webhook to your local app';
 
     public function handle(): int
     {
         $gw = (string) $this->argument('gateway');
         $cfg = (array) config("parakit.gateways.{$gw}");
         $path = (string) config('parakit.webhooks.route_prefix', 'payments/webhooks');
-        $url = url("/{$path}/{$gw}");
+        $txnId = (string) $this->option('transaction-id');
+        $reference = (string) $this->option('reference');
+        $status = (string) $this->option('status');
 
         $body = match ($gw) {
             'zaincash' => [
@@ -34,30 +36,56 @@ class SimulateWebhookCommand extends Command
                     'eventId' => (string) Str::uuid(),
                     'timestamp' => gmdate('c'),
                     'data' => [
-                        'transactionId' => (string) $this->option('transaction-id'),
-                        'orderId' => (string) $this->option('reference'),
-                        'currentStatus' => $this->mapStatus((string) $this->option('status')),
+                        'transactionId' => $txnId,
+                        'orderId' => $reference,
+                        'currentStatus' => strtolower($status) === 'paid' ? 'SUCCESS' : strtoupper($status),
                         'amount' => ['currency' => 'IQD', 'value' => 5000],
                     ],
                 ], (string) ($cfg['api_key'] ?? ''), 'HS256'),
             ],
             'fib' => [
-                'id' => (string) $this->option('transaction-id'),
-                'status' => strtoupper((string) $this->option('status')),
+                'id' => $txnId,
+                'status' => strtoupper($status),
+            ],
+            // NassPay callbacks carry just the orderId; parakit re-fetches the
+            // authoritative status via checkStatus, so the body is minimal.
+            'nass' => [
+                'orderId' => $txnId,
+                'responseCode' => '00',
+            ],
+            // NassWallet POSTs a nested {"data": {...}} envelope and verifies
+            // off InitTransactionId. It also appends /callback to the route.
+            'nasswallet' => [
+                'data' => [
+                    'InitTransactionId' => $txnId,
+                    'orderId' => $reference,
+                    'transactionStatus' => $this->titleStatus($status),
+                ],
+            ],
+            // FastPay IPNs carry order_id; parakit re-fetches via validate.
+            'fastpay' => [
+                'order_id' => $txnId,
+                'status' => $this->titleStatus($status),
             ],
             default => [],
         };
 
-        $resp = Http::asForm()->post($url, $body);
+        // NassWallet's gateway appends /callback to the merchant callback URL.
+        $suffix = $gw === 'nasswallet' ? '/callback' : '';
+        $url = url("/{$path}/{$gw}{$suffix}");
+
+        // NassWallet expects a JSON body (nested envelope); the others post a
+        // flat form, matching how each real gateway delivers its callback.
+        $client = $gw === 'nasswallet' ? Http::asJson() : Http::asForm();
+        $resp = $client->post($url, $body);
         $this->line("HTTP {$resp->status()}: {$resp->body()}");
 
         return $resp->successful() ? self::SUCCESS : self::FAILURE;
     }
 
-    private function mapStatus(string $s): string
+    /** "paid" is the parakit-canonical name; these gateways call it "Success". */
+    private function titleStatus(string $s): string
     {
-        // "paid" is the parakit-canonical name; ZainCash v2 calls a successful
-        // payment "SUCCESS". Every other status is upper-cased to match v2.
-        return strtolower($s) === 'paid' ? 'SUCCESS' : strtoupper($s);
+        return strtolower($s) === 'paid' ? 'Success' : ucfirst(strtolower($s));
     }
 }

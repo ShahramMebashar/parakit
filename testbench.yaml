@@ -1,0 +1,3 @@
+providers:
+  - Barryvdh\DomPDF\ServiceProvider
+  - Froshly\Parakit\ParakitServiceProvider

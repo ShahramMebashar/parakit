@@ -7,11 +7,14 @@ use Froshly\Parakit\DTOs\PaymentResponse;
 use Froshly\Parakit\DTOs\WebhookPayload;
 use Froshly\Parakit\Enums\Currency;
 use Froshly\Parakit\Enums\PaymentStatus;
+use Froshly\Parakit\Events\GatewayTimeout;
 use Froshly\Parakit\Events\PaymentInitiated;
+use Froshly\Parakit\Exceptions\GatewayTimeoutException;
 use Froshly\Parakit\Exceptions\GatewayUnavailableException;
 use Froshly\Parakit\Models\PaymentTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
     Cache::flush();
@@ -202,6 +205,28 @@ it('fires PaymentInitiated carrying the persisted transaction', function () {
     expect($captured)->not->toBeNull()
         ->and($captured->transaction)->toBeInstanceOf(PaymentTransaction::class)
         ->and($captured->transaction->reference)->toBe('ord_w6');
+});
+
+it('dispatches GatewayTimeout, with the endpoint and duration, when a charge times out', function () {
+    config()->set('parakit.reliability.retry.max_attempts', 1);
+    Event::fake([GatewayTimeout::class]);
+
+    $gw = new class('dummy', []) extends AbstractGateway {
+        protected function performCharge(PaymentRequest $r): PaymentResponse {
+            throw new GatewayTimeoutException('/charge', 15000, 'timed out');
+        }
+        public function handleWebhook(Request $r): WebhookPayload { throw new RuntimeException('n/a'); }
+        public function name(): string { return 'dummy'; }
+    };
+
+    try {
+        $gw->charge(new PaymentRequest('ord_t', 1, Currency::IQD, 'd', idempotencyKey: 't1'));
+    } catch (GatewayUnavailableException) {
+        // expected — a timeout is still surfaced as a transient failure
+    }
+
+    Event::assertDispatched(GatewayTimeout::class, fn (GatewayTimeout $e) =>
+        $e->gateway === 'dummy' && $e->endpoint === '/charge' && $e->durationMs === 15000);
 });
 
 it('opens the circuit after threshold failures and fails fast thereafter', function () {

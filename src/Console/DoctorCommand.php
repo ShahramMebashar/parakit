@@ -36,7 +36,7 @@ class DoctorCommand extends Command
             $driverType = (string) ($cfg['driver'] ?? $name);
             $required = match ($driverType) {
                 'fib'      => ['base_url', 'client_id', 'client_secret', 'callback_url'],
-                'zaincash' => ['base_url', 'merchant_id', 'msisdn', 'secret'],
+                'zaincash' => ['base_url', 'client_id', 'client_secret', 'api_key'],
                 default    => null,
             };
 

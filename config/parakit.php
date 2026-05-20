@@ -35,6 +35,48 @@ return [
         'max_age_hours' => 24,
     ],
 
+    'receipts' => [
+        // Template used when none is given at runtime: modern | classic | minimal.
+        'template' => env('PARAKIT_RECEIPTS_TEMPLATE', 'modern'),
+
+        // Default disk + path for ReceiptDocument::save().
+        'disk'     => env('PARAKIT_RECEIPTS_DISK', 'local'),
+        'path'     => 'receipts',
+        // Tokens: {type} {reference} {id}
+        'filename' => '{type}-{reference}.pdf',
+
+        // Locale the receipt is rendered in: 'app' uses the current app locale.
+        'locale' => 'app',
+
+        // Transaction metadata keys the receipt falls back to for customer
+        // details when none are passed explicitly.
+        'metadata' => [
+            'name_key'   => 'customer_name',
+            'email_key'  => 'customer_email',
+            'phone_key'  => 'customer_phone',
+            'locale_key' => 'locale',
+        ],
+
+        // Merchant block printed on every receipt.
+        'merchant' => [
+            'name'          => env('PARAKIT_MERCHANT_NAME', config('app.name')),
+            'address'       => env('PARAKIT_MERCHANT_ADDRESS'),
+            'logo'          => env('PARAKIT_MERCHANT_LOGO'), // absolute path or data URI
+            'support_email' => env('PARAKIT_MERCHANT_SUPPORT_EMAIL'),
+        ],
+
+        'pdf' => [
+            'paper'       => 'a4',
+            'orientation' => 'portrait',
+            'options'     => [
+                // DejaVu Sans is the only bundled dompdf font with Arabic /
+                // Kurdish glyph coverage — required for ar/ckb receipts.
+                'defaultFont'      => 'DejaVu Sans',
+                'isRemoteEnabled'  => false,
+            ],
+        ],
+    ],
+
     'gateways' => [
         'fib' => [
             'driver' => 'fib',

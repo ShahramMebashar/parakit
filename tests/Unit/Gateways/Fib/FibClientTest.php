@@ -1,8 +1,11 @@
 <?php
 declare(strict_types=1);
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Froshly\Parakit\Exceptions\GatewayTimeoutException;
+use Froshly\Parakit\Exceptions\GatewayUnavailableException;
 use Froshly\Parakit\Gateways\Fib\FibClient;
 use Froshly\Parakit\Gateways\Fib\FibTokenCache;
 
@@ -56,6 +59,32 @@ it('fetches status by id', function () {
 
     $resp = $client->fetchStatus('f1f9d4c7-7c4f-4dc5-92c0-1234567890ab');
     expect($resp['status'])->toBe('PAID');
+});
+
+it('throws a GatewayTimeoutException carrying the endpoint when the charge connection times out', function () {
+    Http::fake([
+        '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 600]),
+        '*/protected/v1/payments' => fn () => throw new ConnectionException('cURL error 28: Operation timed out'),
+    ]);
+
+    $client = new FibClient(
+        baseUrl: 'https://fib.stage.fib.iq',
+        tokens: new FibTokenCache('https://fib.stage.fib.iq', 'cid', 'csecret'),
+    );
+
+    try {
+        $client->createCharge([
+            'amount' => 5000,
+            'currency' => 'IQD',
+            'callback' => 'https://app.test/cb',
+            'description' => 'Order 1',
+        ]);
+        $this->fail('expected a GatewayTimeoutException');
+    } catch (GatewayTimeoutException $e) {
+        expect($e->endpoint)->toBe('/protected/v1/payments')
+            ->and($e->durationMs)->toBeGreaterThanOrEqual(0)
+            ->and($e)->toBeInstanceOf(GatewayUnavailableException::class);
+    }
 });
 
 it('cancels a payment by id with a bearer token', function () {

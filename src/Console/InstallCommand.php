@@ -34,6 +34,11 @@ class InstallCommand extends Command
         ]);
 
         $this->info('parakit installed.');
+
+        // Receipt templates are intentionally NOT auto-published — a frozen
+        // copy drifts from package updates. Publish only to customise them.
+        $this->line('  To customise receipt templates: php artisan vendor:publish --tag=parakit-views');
+
         return self::SUCCESS;
     }
 }

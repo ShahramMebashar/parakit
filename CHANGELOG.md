@@ -4,6 +4,9 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 
 ## [Unreleased]
 
+### Added
+- Receipts: generate branded PDF receipts (and refund receipts) from a transaction via the new `Receipt` facade — `Receipt::for($tx)->template('classic')->generate()`. Ships three runtime-selectable templates (`modern` default, `classic`, `minimal`), all RTL-aware with en/ar/ckb translations. Deliver via `stream()`, `download()`, or `save($disk)`. Customer name/email/phone are overridable with a `CustomerDetails` DTO or a plain array, falling back to transaction metadata. Bundles `barryvdh/laravel-dompdf`; templates are publishable with `--tag=parakit-views`. Preview template designs without a real payment via `php artisan parakit:receipt:preview` (`--all` dumps every template × type × locale).
+
 ## [0.7.1] — 2026-05-19
 
 ### Added

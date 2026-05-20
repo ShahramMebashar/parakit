@@ -1,8 +1,10 @@
 <?php
 declare(strict_types=1);
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Froshly\Parakit\Gateways\FastPay\FastPayClient;
+use Froshly\Parakit\Exceptions\GatewayTimeoutException;
 use Froshly\Parakit\Exceptions\GatewayUnavailableException;
 use Froshly\Parakit\Exceptions\PaymentException;
 
@@ -59,6 +61,21 @@ it('throws GatewayUnavailable on a 5xx (retryable)', function () {
 
     fastPayClient()->initiation(['order_id' => 'ORD123456']);
 })->throws(GatewayUnavailableException::class);
+
+it('throws a GatewayTimeoutException carrying the endpoint when the connection times out', function () {
+    Http::fake([
+        '*/payment/initiation' => fn () => throw new ConnectionException('cURL error 28: Operation timed out'),
+    ]);
+
+    try {
+        fastPayClient()->initiation(['order_id' => 'ORD123456']);
+        test()->fail('expected a GatewayTimeoutException');
+    } catch (GatewayTimeoutException $e) {
+        expect($e->endpoint)->toBe('/api/v1/public/pgw/payment/initiation')
+            ->and($e->durationMs)->toBeGreaterThanOrEqual(0)
+            ->and($e)->toBeInstanceOf(GatewayUnavailableException::class);
+    }
+});
 
 it('throws a non-retryable PaymentException when the body code is 422', function () {
     Http::fake([
