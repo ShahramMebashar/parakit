@@ -2,10 +2,16 @@
 
 All notable changes to `froshly/parakit` are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.8.0] — 2026-05-20
 
 ### Added
 - Receipts: generate branded PDF receipts (and refund receipts) from a transaction via the new `Receipt` facade — `Receipt::for($tx)->template('classic')->generate()`. Ships three runtime-selectable templates (`modern` default, `classic`, `minimal`), all RTL-aware with en/ar/ckb translations. Deliver via `stream()`, `download()`, or `save($disk)`. Customer name/email/phone are overridable with a `CustomerDetails` DTO or a plain array, falling back to transaction metadata. Bundles `barryvdh/laravel-dompdf`; templates are publishable with `--tag=parakit-views`. Preview template designs without a real payment via `php artisan parakit:receipt:preview` (`--all` dumps every template × type × locale).
+- Events: hook into the full payment lifecycle from your app — listen for `PaymentInitiated`, `PaymentSucceeded`, `PaymentFailed`, `PaymentCancelled`, `PaymentRefunded`, `WebhookReceived`, `WebhookVerificationFailed`, `GatewayTimeout`, and `CircuitOpened` to wire notifications, ledgers, analytics, or alerting without patching the package. Gateway timeouts now raise a typed `GatewayTimeoutException` that carries the timeout context, and circuit-breaker trips fire `CircuitOpened`. See `docs/reference/events.md`.
+- Documentation site: VitePress-powered docs under `docs/`, deployed to GitHub Pages via `.github/workflows/docs.yml` — covers installation, configuration, every gateway, and topic guides (charging, webhooks, refunds, receipts, reliability, multi-tenant, custom gateways, testing).
+
+### Changed
+- `parakit:doctor` now validates ZainCash v2 required configuration fields.
+- `parakit:simulate-webhook` accepts additional transaction options and covers more gateway payload shapes.
 
 ## [0.7.1] — 2026-05-19
 
