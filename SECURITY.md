@@ -5,10 +5,6 @@ repository, open the *Security* tab → *Report a vulnerability*. This routes
 to the maintainer with audit-logged access controls and never appears in
 public issues.
 
-(A `security@parakit.dev` mailbox is planned alongside the v1.0 release;
-until that domain is monitored, GitHub Security Advisories is the
-authoritative channel.)
-
 - Public disclosure window: **90 days** from acknowledgement.
 - Supported versions: the **latest two minor releases**.
 - CVEs (when applicable) are published in `CHANGELOG.md`.
