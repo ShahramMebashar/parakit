@@ -56,6 +56,10 @@ final class WebhookProcessor
             return PaymentWebhookEvent::create([
                 'gateway' => $payload->gateway,
                 'event_id' => $payload->eventId,
+                'gateway_transaction_id' => $payload->gatewayTransactionId !== '' ? $payload->gatewayTransactionId : null,
+                'reference' => $payload->reference !== '' ? $payload->reference : null,
+                'amount' => $payload->amount,
+                'currency' => $payload->currency->value,
                 'status' => $payload->status->value,
                 'payload' => $payload->raw,
             ]);

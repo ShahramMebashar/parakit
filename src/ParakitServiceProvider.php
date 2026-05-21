@@ -57,6 +57,7 @@ class ParakitServiceProvider extends ServiceProvider
                 \Froshly\Parakit\Console\SweepPendingCommand::class,
                 \Froshly\Parakit\Console\TestChargeCommand::class,
                 \Froshly\Parakit\Console\SimulateWebhookCommand::class,
+                \Froshly\Parakit\Console\WebhookReplayCommand::class,
                 \Froshly\Parakit\Console\PruneLogsCommand::class,
                 \Froshly\Parakit\Console\PreviewReceiptCommand::class,
             ]);
