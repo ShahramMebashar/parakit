@@ -2,6 +2,11 @@
 
 All notable changes to `froshly/parakit` are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] — 2026-05-21
+
+### Added
+- QiCard driver: hosted-page card payment (Visa / Mastercard) for the Iraqi market, with 3D Secure handled inside QiCard's hosted form. Implements `SupportsStatusCheck`, `SupportsRefund` (full + partial), and `SupportsCancel`. Webhook authenticity is provable — every QiCard notification is verified against the configured RSA-2048 public key (`OPENSSL_ALGO_SHA256`, algorithm-pinned). When no public key is configured, parakit logs `parakit.qicard.webhook.unverified` and falls back to a server-to-server status re-check rather than trusting the inbound body. `parakit:doctor` validates the required QiCard config fields; `parakit:webhook:simulate qicard --sign-with=key.pem` emits a signed test notification end-to-end.
+
 ## [0.8.0] — 2026-05-20
 
 ### Added
