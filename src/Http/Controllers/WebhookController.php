@@ -66,13 +66,14 @@ class WebhookController
 
         event(new WebhookReceived($payload));
 
+        // Atomic record+apply: a worker crash between the two used to leave
+        // an event row with processed_at=null that the gateway's retry would
+        // then dedupe-200 without applying.
         try {
-            $eventRow = $processor->recordEvent($payload);
+            $processor->process($payload);
         } catch (DuplicateWebhookException) {
             return new Response('duplicate', 200);
         }
-
-        $processor->applyToTransaction($payload, $eventRow);
 
         return new Response('ok', 200);
     }
