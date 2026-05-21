@@ -159,42 +159,17 @@ final class WebhookProcessor
                 return;
             }
 
-            // transitionTo() already saved if status moved — capture here, before
-            // the refunded_amount save clears it.
+            // transitionTo() already saved if status moved — capture before the
+            // refunded_amount save clears it.
             $statusChanged = $tx->wasChanged('status');
 
-            // Partial refund webhooks carry the delta, not a running total.
-            if ($p->status === PaymentStatus::Refunded) {
-                $tx->refunded_amount = (int) $tx->amount;
-            } elseif ($p->status === PaymentStatus::PartiallyRefunded && $p->amount > 0) {
-                $next = (int) $tx->refunded_amount + $p->amount;
-                $charge = (int) $tx->amount;
-                if ($next > $charge) {
-                    Log::warning('parakit.webhook.refund_overflow', [
-                        'gateway' => $p->gateway,
-                        'tx' => $tx->id,
-                        'event_id' => $eventRow->event_id,
-                        'charge_amount' => $charge,
-                        'refunded_so_far' => (int) $tx->refunded_amount,
-                        'delta' => $p->amount,
-                    ]);
-                    $next = $charge;
-                }
-                $tx->refunded_amount = $next;
-            }
-
+            $this->applyRefundAccounting($p, $tx, $eventRow);
             $refundedAmountChanged = $tx->isDirty('refunded_amount');
 
             $tx->save();
             $eventRow->update(['processed_at' => now()]);
 
-            if ($statusChanged) {
-                $this->fireEventFor($p->status, $tx);
-            } elseif ($refundedAmountChanged && in_array($p->status, [PaymentStatus::Refunded, PaymentStatus::PartiallyRefunded], true)) {
-                // A second PartiallyRefunded webhook updates the amount without
-                // moving status — bookkeeping listeners still need to hear it.
-                event(new PaymentRefunded($tx));
-            }
+            $this->dispatchDomainEvents($p, $tx, $statusChanged, $refundedAmountChanged);
         });
     }
 
@@ -205,14 +180,64 @@ final class WebhookProcessor
             && $p->amount !== (int) $tx->amount;
     }
 
-    private function fireEventFor(PaymentStatus $status, PaymentTransaction $tx): void
+    /**
+     * Refund-status webhooks update refunded_amount. Full Refunded settles to
+     * the charge amount; PartiallyRefunded webhooks carry a delta (not a
+     * running total), accumulated and capped at the charge — overflow logs
+     * `parakit.webhook.refund_overflow` rather than letting the column lie.
+     */
+    private function applyRefundAccounting(WebhookPayload $p, PaymentTransaction $tx, PaymentWebhookEvent $eventRow): void
     {
-        match ($status) {
-            PaymentStatus::Paid => event(new PaymentSucceeded($tx)),
-            PaymentStatus::Failed => event(new PaymentFailed($tx)),
-            PaymentStatus::Cancelled, PaymentStatus::Expired => event(new PaymentCancelled($tx)),
-            PaymentStatus::Refunded, PaymentStatus::PartiallyRefunded => event(new PaymentRefunded($tx)),
-            default => null,
-        };
+        if ($p->status === PaymentStatus::Refunded) {
+            $tx->refunded_amount = (int) $tx->amount;
+            return;
+        }
+        if ($p->status !== PaymentStatus::PartiallyRefunded || $p->amount <= 0) {
+            return;
+        }
+
+        $next = (int) $tx->refunded_amount + $p->amount;
+        $charge = (int) $tx->amount;
+        if ($next > $charge) {
+            Log::warning('parakit.webhook.refund_overflow', [
+                'gateway' => $p->gateway,
+                'tx' => $tx->id,
+                'event_id' => $eventRow->event_id,
+                'charge_amount' => $charge,
+                'refunded_so_far' => (int) $tx->refunded_amount,
+                'delta' => $p->amount,
+            ]);
+            $next = $charge;
+        }
+        $tx->refunded_amount = $next;
+    }
+
+    /**
+     * Status change fires the lifecycle event for the new status. A refund
+     * webhook that didn't move status but did update refunded_amount (e.g. a
+     * second PartiallyRefunded delivery) still fires PaymentRefunded so
+     * bookkeeping listeners hear every real delta.
+     */
+    private function dispatchDomainEvents(
+        WebhookPayload $p,
+        PaymentTransaction $tx,
+        bool $statusChanged,
+        bool $refundedAmountChanged,
+    ): void {
+        if ($statusChanged) {
+            match ($p->status) {
+                PaymentStatus::Paid => event(new PaymentSucceeded($tx)),
+                PaymentStatus::Failed => event(new PaymentFailed($tx)),
+                PaymentStatus::Cancelled, PaymentStatus::Expired => event(new PaymentCancelled($tx)),
+                PaymentStatus::Refunded, PaymentStatus::PartiallyRefunded => event(new PaymentRefunded($tx)),
+                default => null,
+            };
+            return;
+        }
+
+        $isRefund = $p->status === PaymentStatus::Refunded || $p->status === PaymentStatus::PartiallyRefunded;
+        if ($refundedAmountChanged && $isRefund) {
+            event(new PaymentRefunded($tx));
+        }
     }
 }
