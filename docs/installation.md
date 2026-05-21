@@ -66,7 +66,7 @@ PARAKIT_DEFAULT=fib
 
 `PARAKIT_DEFAULT` is the gateway used when you call `Payment::charge()` without
 `->driver()`. It must match a key under `parakit.gateways` — the bundled config
-defines all five (`fib`, `zaincash`, `nass`, `nasswallet`, `fastpay`).
+defines all six (`fib`, `zaincash`, `nass`, `nasswallet`, `fastpay`, `qicard`).
 
 Each gateway needs its own env vars. Rather than list them all here, see the
 gateway page for the one you are integrating — it has the full credential table
@@ -77,6 +77,7 @@ and where to obtain the keys:
 - [Nass Pay](/gateways/nass)
 - [Nass Wallet](/gateways/nasswallet)
 - [FastPay](/gateways/fastpay)
+- [QiCard](/gateways/qicard)
 
 You only need credentials for the gateways you actually use. For how the
 `gateways` block is structured, see [Configuration](/configuration).

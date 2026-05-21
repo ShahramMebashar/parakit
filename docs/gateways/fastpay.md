@@ -4,7 +4,7 @@ title: FastPay
 
 # FastPay
 
-FastPay is a hosted-checkout gateway: you create a payment server-side, then send the customer to a FastPay-hosted page to pay. `charge()` returns a `redirectUrl` and nothing else. FastPay also supports refunds.
+[FastPay](https://fast-pay.iq) is a hosted-checkout gateway: you create a payment server-side, then send the customer to a FastPay-hosted page to pay. `charge()` returns a `redirectUrl` and nothing else. FastPay also supports refunds. For credentials and merchant onboarding, see FastPay's [integration page](https://fast-pay.iq/integration).
 
 ## Credentials
 

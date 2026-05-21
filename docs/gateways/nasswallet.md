@@ -4,7 +4,7 @@ title: Nass Wallet
 
 # Nass Wallet
 
-Nass Wallet is a hosted-checkout gateway: you create a transaction server-side, then send the customer to a Nass Wallet checkout portal to pay. `charge()` returns a `redirectUrl` and nothing else.
+[Nass Wallet](https://nw.iq) is a hosted-checkout gateway: you create a transaction server-side, then send the customer to a Nass Wallet checkout portal to pay. `charge()` returns a `redirectUrl` and nothing else.
 
 ## Credentials
 

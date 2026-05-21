@@ -131,7 +131,7 @@ parakit:test-charge {gateway} {--amount=1000} {--currency=IQD}
 
 | Argument | Required | Description |
 | --- | --- | --- |
-| `gateway` | yes | Gateway key to charge (`fib`, `zaincash`, `nass`, `nasswallet`, `fastpay`). |
+| `gateway` | yes | Gateway key to charge (`fib`, `zaincash`, `nass`, `nasswallet`, `fastpay`, `qicard`). |
 
 | Option | Default | Description |
 | --- | --- | --- |
@@ -162,18 +162,19 @@ Posts a test webhook to your local app, so you can exercise your webhook
 handling without waiting on the real gateway.
 
 ```
-parakit:webhook:simulate {gateway} {--status=paid} {--reference=} {--transaction-id=}
+parakit:webhook:simulate {gateway} {--status=paid} {--reference=} {--transaction-id=} {--sign-with=}
 ```
 
 | Argument | Required | Description |
 | --- | --- | --- |
-| `gateway` | yes | Gateway key — `fib`, `zaincash`, `nass`, `nasswallet`, or `fastpay`. |
+| `gateway` | yes | Gateway key — `fib`, `zaincash`, `nass`, `nasswallet`, `fastpay`, or `qicard`. |
 
 | Option | Default | Description |
 | --- | --- | --- |
 | `--status=` | `paid` | Payment status to report. `paid` maps to each gateway's success status. |
 | `--reference=` | empty | Your order reference to put in the payload. |
 | `--transaction-id=` | empty | Gateway transaction id to put in the payload. |
+| `--sign-with=` | empty | Path to a PEM-encoded RSA private key. QiCard only — signs the canonical payload string and adds the `X-Signature` header so your verification path exercises end to end. Without this flag the qicard simulator posts an unsigned body, exercising the fallback (status re-check) path instead. |
 
 The webhook is posted to `{route_prefix}/{gateway}` on your app URL — except
 NassWallet, which is posted to `{route_prefix}/nasswallet/callback`. Each
