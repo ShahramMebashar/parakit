@@ -6,6 +6,16 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 
 ### Added
 - QiCard driver: hosted-page card payment (Visa / Mastercard) for the Iraqi market, with 3D Secure handled inside QiCard's hosted form. Implements `SupportsStatusCheck`, `SupportsRefund` (full + partial), and `SupportsCancel`. Webhook authenticity is provable — every QiCard notification is verified against the configured RSA-2048 public key (`OPENSSL_ALGO_SHA256`, algorithm-pinned). When no public key is configured, parakit logs `parakit.qicard.webhook.unverified` and falls back to a server-to-server status re-check rather than trusting the inbound body. `parakit:doctor` validates the required QiCard config fields; `parakit:webhook:simulate qicard --sign-with=key.pem` emits a signed test notification end-to-end.
+- `PaymentLogger` is now wired into `AbstractGateway::charge`: every charge outcome (success or failure) writes a redacted audit-trail row to `payment_logs` carrying gateway, action, duration, sanitized request/response, correlation id, and the error message on failure. Gated by the existing `parakit.logging.enabled` flag. Previously the table was created but never populated by the package itself.
+
+### Fixed
+- **FIB no longer retries 4xx responses.** `FibClient` and `FibTokenCache` previously threw `GatewayUnavailableException` for any non-2xx, which `AbstractGateway` treats as retryable — so a bad credential burned 3 charge attempts and 3 circuit-breaker failure ticks. 5xx stays retryable; 4xx now surfaces as the non-retryable `FibApiException` (carries the HTTP status). Mirrors the FastPay / QiCard pattern.
+- **Webhook record-and-apply is now atomic.** The webhook controller used to commit the dedupe event row first and then run `applyToTransaction` in a separate transaction; a worker crash between the two left an orphaned event row that caused subsequent gateway retries to dedupe-200 without applying. `WebhookProcessor::process()` now wraps both steps in a single DB transaction.
+
+### Security
+- **Webhook amount=0 no longer free-passes the mismatch check.** A `Paid` webhook reporting amount 0 against a non-zero transaction is now treated as a mismatch (logged in default mode, rejected in `reject` mode). Closes the silent-Paid path where a buggy gateway response could mark a row Paid for the originally charged amount.
+- **`PayloadRedactor` now does word-boundary matching.** Splits keys on `_ - / whitespace` and camelCase boundaries before matching against the configured tokens, so gateway-specific credential keys (`store_password`, `refund_secret_key`, `basic_token`, `client_secret`, `api_key`, `public_key`) are redacted by default — without false positives on `secretary`, `keyboard`, `discard`. The default `redact_keys` list now includes `key`, `cvv`, `cvc`, `pan`, and `pin`.
+- **`QiCardSignatureVerifier` no longer caches parsed public keys.** A static cache survived Octane requests, meaning a rotated public key kept validating against the old key until the worker recycled. PEM parsing is microseconds; the cache was not worth the staleness risk.
 
 ## [0.8.0] — 2026-05-20
 
