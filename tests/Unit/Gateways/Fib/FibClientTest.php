@@ -122,6 +122,25 @@ it('still throws GatewayUnavailableException on 5xx (so AbstractGateway retries 
         ->toThrow(GatewayUnavailableException::class);
 });
 
+it('rawurlencodes the paymentId in the URL path (defense in depth)', function () {
+    Http::fake([
+        '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 60]),
+        '*/protected/v1/payments/*/status' => Http::response(['status' => 'PAID'], 200),
+    ]);
+
+    $client = new FibClient(
+        baseUrl: 'https://fib.stage.fib.iq',
+        tokens: new FibTokenCache('https://fib.stage.fib.iq', 'cid', 'csecret'),
+    );
+
+    $client->fetchStatus('weird id/with slash');
+
+    Http::assertSent(function ($req) {
+        return str_contains($req->url(), 'weird%20id%2Fwith%20slash')
+            && !str_contains($req->url(), 'weird id/with slash');
+    });
+});
+
 it('cancels a payment by id with a bearer token', function () {
     Http::fake([
         '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 60]),

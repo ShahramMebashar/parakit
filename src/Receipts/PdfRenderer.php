@@ -6,9 +6,11 @@ namespace Froshly\Parakit\Receipts;
 /**
  * The only dompdf-aware class in the package.
  *
- * Everything else depends on this thin seam, so dompdf can be swapped or
- * mocked without touching receipt generation logic. dompdf ships as a hard
- * dependency, so `dompdf.wrapper` is always bound via package discovery.
+ * dompdf is an optional dependency since v0.9.1; merchants who don't generate
+ * PDF receipts shouldn't pay for ~5MB of HTML-to-PDF code. If a host app
+ * resolves PdfRenderer without `barryvdh/laravel-dompdf` installed, we throw
+ * a helpful install hint rather than the cryptic "binding not found" the
+ * container would otherwise produce.
  */
 class PdfRenderer
 {
@@ -22,6 +24,13 @@ class PdfRenderer
     /** Render an HTML document to raw PDF bytes. */
     public function render(string $html): string
     {
+        if (!app()->bound('dompdf.wrapper')) {
+            throw new \RuntimeException(
+                'Parakit receipts require barryvdh/laravel-dompdf. '
+                . 'Install it with: composer require barryvdh/laravel-dompdf'
+            );
+        }
+
         $pdf = app('dompdf.wrapper');
 
         if (!empty($this->config['options'])) {

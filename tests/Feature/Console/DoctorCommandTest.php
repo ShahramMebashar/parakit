@@ -48,3 +48,30 @@ it('exits non-zero when a ZainCash credential is missing', function () {
     ]);
     $this->artisan('parakit:doctor --gateway=zaincash')->assertFailed();
 });
+
+it('warns (but still succeeds) when QiCard public_key is unset', function () {
+    config()->set('parakit.gateways.qicard', [
+        'driver'      => 'qicard',
+        'base_url'    => 'https://uat-sandbox-3ds-api.qi.iq',
+        'username'    => 'u', 'password' => 'p', 'terminal_id' => '237984',
+        // public_key intentionally omitted — fallback mode is allowed but
+        // should be flagged.
+    ]);
+
+    $this->artisan('parakit:doctor --gateway=qicard')
+        ->expectsOutputToContain('public_key not set')
+        ->assertSuccessful();
+});
+
+it('does not warn when QiCard public_key is configured', function () {
+    config()->set('parakit.gateways.qicard', [
+        'driver'      => 'qicard',
+        'base_url'    => 'https://uat-sandbox-3ds-api.qi.iq',
+        'username'    => 'u', 'password' => 'p', 'terminal_id' => '237984',
+        'public_key'  => '-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----',
+    ]);
+
+    $this->artisan('parakit:doctor --gateway=qicard')
+        ->doesntExpectOutputToContain('public_key not set')
+        ->assertSuccessful();
+});

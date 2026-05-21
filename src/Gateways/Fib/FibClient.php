@@ -49,21 +49,21 @@ final class FibClient
     /** @return array<string, mixed> */
     public function fetchStatus(string $paymentId): array
     {
-        $uri = "/protected/v1/payments/{$paymentId}/status";
+        $uri = '/protected/v1/payments/' . rawurlencode($paymentId) . '/status';
         return $this->parse('status', $uri, $this->send('GET', $uri));
     }
 
     /** @return array<string, mixed> */
     public function refund(string $paymentId): array
     {
-        $uri = "/protected/v1/payments/{$paymentId}/refund";
+        $uri = '/protected/v1/payments/' . rawurlencode($paymentId) . '/refund';
         return $this->parse('refund', $uri, $this->send('POST', $uri));
     }
 
     /** @return array<string, mixed> */
     public function cancel(string $paymentId): array
     {
-        $uri = "/protected/v1/payments/{$paymentId}/cancel";
+        $uri = '/protected/v1/payments/' . rawurlencode($paymentId) . '/cancel';
         return $this->parse('cancel', $uri, $this->send('POST', $uri));
     }
 

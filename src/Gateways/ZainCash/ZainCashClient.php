@@ -42,7 +42,7 @@ final class ZainCashClient
     /** @return array<string, mixed> */
     public function inquiry(string $transactionId): array
     {
-        $res = $this->send('GET', "/api/v2/payment-gateway/transaction/inquiry/{$transactionId}");
+        $res = $this->send('GET', '/api/v2/payment-gateway/transaction/inquiry/' . rawurlencode($transactionId));
         if (!$res->successful()) {
             throw new GatewayUnavailableException("ZainCash inquiry failed: HTTP {$res->status()}");
         }
