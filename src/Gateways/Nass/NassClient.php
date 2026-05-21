@@ -30,7 +30,7 @@ final class NassClient
     /** @return array<string, mixed> */
     public function checkStatus(string $orderId): array
     {
-        return $this->send('GET', "/transaction/{$orderId}/checkStatus", null);
+        return $this->send('GET', '/transaction/' . rawurlencode($orderId) . '/checkStatus', null);
     }
 
     /**
