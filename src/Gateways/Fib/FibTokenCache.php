@@ -6,6 +6,7 @@ namespace Froshly\Parakit\Gateways\Fib;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Froshly\Parakit\Exceptions\GatewayUnavailableException;
+use Froshly\Parakit\Gateways\Fib\FibApiException;
 
 final class FibTokenCache
 {
@@ -40,8 +41,15 @@ final class FibTokenCache
                 'client_secret' => $this->clientSecret,
             ]);
 
+        $status = $response->status();
+        if ($status >= 500) {
+            throw new GatewayUnavailableException("FIB token endpoint returned {$status}");
+        }
         if (!$response->successful()) {
-            throw new GatewayUnavailableException("FIB token endpoint returned {$response->status()}");
+            // 4xx on the token endpoint is bad credentials — deterministic,
+            // not transient. Surface as non-retryable so the charge retry
+            // loop short-circuits.
+            throw new FibApiException("FIB token endpoint rejected: HTTP {$status}", $status);
         }
 
         $token = (string) $response->json('access_token');

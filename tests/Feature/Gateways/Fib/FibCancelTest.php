@@ -41,11 +41,11 @@ it('cancels an unpaid payment and returns the post-cancel status', function () {
         && $req->method() === 'POST');
 });
 
-it('throws GatewayUnavailableException when cancel fails', function () {
+it('throws a non-retryable FibApiException when cancel fails with a 4xx', function () {
     Http::fake([
         '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 60]),
         '*/protected/v1/payments/*/cancel' => Http::response('already paid', 409),
     ]);
 
     Payment::driver('fib')->cancel('pid_1');
-})->throws(\Froshly\Parakit\Exceptions\GatewayUnavailableException::class);
+})->throws(\Froshly\Parakit\Gateways\Fib\FibApiException::class);

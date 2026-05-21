@@ -87,6 +87,41 @@ it('throws a GatewayTimeoutException carrying the endpoint when the charge conne
     }
 });
 
+it('throws a non-retryable FibApiException on 4xx (so AbstractGateway does not retry bad credentials)', function () {
+    Http::fake([
+        '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 60]),
+        '*/protected/v1/payments' => Http::response(['error' => 'invalid_token'], 401),
+    ]);
+
+    $client = new FibClient(
+        baseUrl: 'https://fib.stage.fib.iq',
+        tokens: new FibTokenCache('https://fib.stage.fib.iq', 'cid', 'csecret'),
+    );
+
+    try {
+        $client->createCharge(['amount' => 5000, 'currency' => 'IQD', 'callback' => '', 'description' => 'x']);
+        $this->fail('expected FibApiException');
+    } catch (\Froshly\Parakit\Gateways\Fib\FibApiException $e) {
+        expect($e->httpStatus)->toBe(401)
+            ->and($e)->not->toBeInstanceOf(GatewayUnavailableException::class);
+    }
+});
+
+it('still throws GatewayUnavailableException on 5xx (so AbstractGateway retries transient outages)', function () {
+    Http::fake([
+        '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 60]),
+        '*/protected/v1/payments' => Http::response('upstream gone', 502),
+    ]);
+
+    $client = new FibClient(
+        baseUrl: 'https://fib.stage.fib.iq',
+        tokens: new FibTokenCache('https://fib.stage.fib.iq', 'cid', 'csecret'),
+    );
+
+    expect(fn () => $client->createCharge(['amount' => 5000, 'currency' => 'IQD', 'callback' => '', 'description' => 'x']))
+        ->toThrow(GatewayUnavailableException::class);
+});
+
 it('cancels a payment by id with a bearer token', function () {
     Http::fake([
         '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 60]),
