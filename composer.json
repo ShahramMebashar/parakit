@@ -9,15 +9,18 @@
     "illuminate/database": "^11.0 || ^12.0 || ^13.0",
     "illuminate/http": "^11.0 || ^12.0 || ^13.0",
     "illuminate/support": "^11.0 || ^12.0 || ^13.0",
-    "firebase/php-jwt": "^7.0",
-    "barryvdh/laravel-dompdf": "^3.0"
+    "firebase/php-jwt": "^7.0"
   },
   "require-dev": {
     "orchestra/testbench": "^9.0 || ^10.0 || ^11.0",
     "pestphp/pest": "^3.0 || ^4.0",
     "pestphp/pest-plugin-laravel": "^3.0 || ^4.0",
     "phpstan/phpstan": "^2.1",
-    "larastan/larastan": "^3.0"
+    "larastan/larastan": "^3.0",
+    "barryvdh/laravel-dompdf": "^3.0"
+  },
+  "suggest": {
+    "barryvdh/laravel-dompdf": "Required only if you generate PDF receipts via the Receipt facade (^3.0)."
   },
   "autoload": {
     "psr-4": { "Froshly\\Parakit\\": "src/" }

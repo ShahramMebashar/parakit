@@ -19,3 +19,13 @@ it('applies dompdf options without error', function () {
 
     expect($pdf)->toStartWith('%PDF-');
 });
+
+it('throws a helpful install hint when laravel-dompdf is not installed', function () {
+    // Simulate an app where dompdf is not wired up by hiding the container binding.
+    app()->forgetInstance('dompdf.wrapper');
+    app()->bind('dompdf.wrapper', null);
+    app()->offsetUnset('dompdf.wrapper');
+
+    expect(fn () => (new PdfRenderer())->render('<p>x</p>'))
+        ->toThrow(\RuntimeException::class, 'composer require barryvdh/laravel-dompdf');
+});
