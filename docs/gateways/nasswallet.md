@@ -100,4 +100,4 @@ Nass Wallet callbacks carry **no signature**. `handleWebhook()` reads only `data
 - **Token TTL.** The login token's cache lifetime comes from Nass Wallet's `accessTokenExpiry` (epoch milliseconds), minus a 60s safety margin, with a 30s floor. If that field is missing the token is cached for 300s. On an HTTP `401` the client drops the token, re-logs in, and retries once.
 - **Success signal.** Nass Wallet returns `errCode` `"1"` even on success — it is ignored. Success is `responseCode` `0`; anything else is a non-retryable rejection.
 - **Status mapping.** `transactionStatus` `SUCCESS` maps to `Paid` and `FAILED` to `Failed`. Any other value logs `parakit.nasswallet.unknown_status` and is treated as `Pending`.
-- **Idempotency.** The `orderId` is `crc32` of the stable idempotency key, so a retried charge re-sends the same `orderId` and never double-creates a transaction.
+- **Idempotency.** The `orderId` is derived from the stable idempotency key (sha256 → first 60 bits as a numeric string), so a retried charge re-sends the same `orderId` and never double-creates a transaction. Free-text caller keys are folded through `IdempotencyKey::forGateway` first.

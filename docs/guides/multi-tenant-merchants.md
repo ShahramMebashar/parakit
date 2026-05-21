@@ -65,7 +65,7 @@ config key. That name is what the gateway uses for:
 
 - its **circuit-breaker** cache key — one branch tripping does not open the
   breaker for the other,
-- its **idempotency** namespace (`parakit:idem:{name}:...`),
+- its **idempotency** namespace (`parakit:charge:idem:...` hashed per gateway, plus the per-gateway `payment_refunds` row),
 - the **`gateway` column** written to `payment_transactions`,
 - its **webhook route** — `POST /payments/webhooks/fib_branch_a`.
 

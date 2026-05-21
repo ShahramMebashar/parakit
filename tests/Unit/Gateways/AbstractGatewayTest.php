@@ -304,6 +304,52 @@ it('writes an audit-trail PaymentLog row on a failed charge (carries the error m
         ->and($row->response)->toBe([]);
 });
 
+it('invariant: payment_logs never persists raw credentials, PANs, msisdns, or auth headers', function () {
+    // Luhn-valid PAN (4242 4242 4242 4242). The redactor recognises it via Luhn,
+    // so string fields carrying it are scrubbed regardless of key name.
+    $pan = '4242424242424242';
+    $token = 'tk_supersecret_value';
+    $msisdn = '07700123456';
+    $authHeader = 'Bearer 9c2f-do-not-leak';
+    $cvv = '321';
+
+    $gw = new class('dummy', []) extends \Froshly\Parakit\Gateways\AbstractGateway {
+        public string $token; public string $pan; public string $msisdn; public string $auth; public string $cvv;
+        protected function performCharge(\Froshly\Parakit\DTOs\PaymentRequest $r): \Froshly\Parakit\DTOs\PaymentResponse {
+            return new \Froshly\Parakit\DTOs\PaymentResponse(
+                success: true, gateway: 'dummy', gatewayTransactionId: 'g_1',
+                reference: $r->reference, status: \Froshly\Parakit\Enums\PaymentStatus::Paid,
+                amount: $r->amount, currency: $r->currency, correlationId: 'c',
+                raw: [
+                    'access_token' => $this->token,
+                    'card' => ['pan' => $this->pan, 'cvv' => $this->cvv],
+                    'customer' => ['msisdn' => $this->msisdn],
+                    'headers' => ['authorization' => $this->auth],
+                    // Also embed the PAN in a free-text field to exercise the Luhn-PAN sweep.
+                    'note' => "paid with card {$this->pan}",
+                ],
+            );
+        }
+        public function handleWebhook(\Illuminate\Http\Request $r): \Froshly\Parakit\DTOs\WebhookPayload { throw new RuntimeException('n/a'); }
+        public function name(): string { return 'dummy'; }
+    };
+    $gw->token = $token; $gw->pan = $pan; $gw->msisdn = $msisdn; $gw->auth = $authHeader; $gw->cvv = $cvv;
+
+    $gw->charge(new PaymentRequest(
+        'ord_redact', 5000, Currency::IQD, 'd',
+        idempotencyKey: 'k_redact',
+        metadata: ['authorization' => $authHeader, 'pan' => $pan, 'token' => $token],
+    ));
+
+    $row = \Froshly\Parakit\Models\PaymentLog::first();
+    expect($row)->not->toBeNull();
+
+    $blob = json_encode([$row->request, $row->response], JSON_THROW_ON_ERROR);
+    foreach ([$token, $pan, $msisdn, $authHeader, $cvv] as $secret) {
+        expect($blob)->not->toContain($secret);
+    }
+});
+
 it('honours parakit.logging.enabled=false and writes no PaymentLog rows', function () {
     config()->set('parakit.logging.enabled', false);
     $gw = new DummyGateway('dummy', []);

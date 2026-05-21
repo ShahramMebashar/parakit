@@ -40,6 +40,7 @@ if (! $response->success) {
 | FIB | Yes | Full refund only; bounded by the `refundable_for` window. |
 | ZainCash | Yes | Full reversal only — the refund amount must equal the original charge. |
 | FastPay | Yes | Pushed back to the original payer's wallet. |
+| QiCard | Yes | Full and partial refunds supported. |
 | Nass Pay | **No** | Driver does not implement `SupportsRefund`. |
 | Nass Wallet | **No** | Driver does not implement `SupportsRefund`. |
 

@@ -12,7 +12,7 @@ return new class extends Migration {
             $t->bigIncrements('id');
             $t->string('gateway', 32)->index();
             $t->string('idempotency_key', 64);
-            $t->string('transaction_id')->index();
+            $t->string('gateway_transaction_id')->index();
             $t->unsignedBigInteger('amount');
             $t->string('status', 32)->index();
             $t->string('refund_id')->nullable();

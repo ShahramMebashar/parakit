@@ -68,7 +68,7 @@ it('fails closed when a refund idempotency key is already pending', function () 
     PaymentRefund::create([
         'gateway' => 'fastpay',
         'idempotency_key' => IdempotencyKey::forGatewayOperation('fastpay', 'refund', 'rfk-pending'),
-        'transaction_id' => 'ORD12345678',
+        'gateway_transaction_id' => 'ORD12345678',
         'amount' => 5000,
         'status' => 'pending',
     ]);

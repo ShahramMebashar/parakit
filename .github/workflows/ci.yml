@@ -28,7 +28,7 @@ jobs:
       - name: security audit
         run: composer audit --no-dev --abandoned=ignore
       - run: vendor/bin/pest --coverage --min=80
-      - run: vendor/bin/phpstan analyse
+      - run: composer stan
       - name: forbid stray debug calls
         run: |
           ! grep -rnE '\b(dd|var_dump)\(' src tests

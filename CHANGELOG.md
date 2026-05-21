@@ -7,15 +7,15 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 Hardens refund safety and the idempotency layer.
 
 ### Fixed
-- Refunds are idempotent. Pass an `idempotencyKey`; a retried `refund()` replays the original response instead of double-refunding. Backed by `payment_refunds`. QiCard's `requestId` is also seeded from the key.
+- Refunds are idempotent. Pass an `idempotencyKey`; a retried `refund()` replays the original response instead of double-refunding. Backed by `payment_refunds` (column: `gateway_transaction_id`). QiCard's `requestId` is also seeded from the key.
 - Free-text idempotency keys (`order:123`) no longer corrupt FastPay/Nass/NassWallet/QiCard IDs. Keys are hashed per-gateway before derivation.
 - Same `idempotencyKey` on two gateways no longer crashes — unique index is now composite `(gateway, idempotency_key)`.
-- `refunded_amount` is populated on refund webhooks. Full refunds set it to the charge amount; partials accumulate.
+- `refunded_amount` is populated on refund webhooks. Full refunds set it to the charge amount; partials accumulate, capped at the charge (overflow logs `parakit.webhook.refund_overflow`).
 
 ### Added
 - Webhook orphan self-heal: the gateway's retry applies a parked event in place instead of returning a cold 200.
 - `parakit:webhooks:replay` is scheduled every 5 minutes. Toggle via `parakit.webhooks.replay.enabled`.
-- CI tests Laravel 13 and gates on `composer validate --strict`.
+- CI tests Laravel 13, runs `composer stan` (1 GB memory), and gates on `composer validate --strict`.
 
 ## [0.9.1] — 2026-05-20
 

@@ -22,7 +22,10 @@ final class WebhookProcessor
 {
     public function isReplay(WebhookPayload $payload, int $toleranceSeconds): bool
     {
-        return (new DateTimeImmutable())->getTimestamp() - $payload->occurredAt->getTimestamp() > $toleranceSeconds;
+        // Both-sided: a future occurredAt (forged or clock-skewed) is out of
+        // tolerance just like a stale one.
+        $skewSeconds = abs((new DateTimeImmutable())->getTimestamp() - $payload->occurredAt->getTimestamp());
+        return $skewSeconds > $toleranceSeconds;
     }
 
     /**
@@ -125,7 +128,8 @@ final class WebhookProcessor
             }
             $tx->last_raw_response = $p->raw;
 
-            // Amount 0 from a status re-check is "not reported", not a mismatch.
+            // Paid + amount != tx.amount is a mismatch, INCLUDING amount=0 (a buggy gateway
+            // reporting `Paid, amount: 0` would otherwise silently settle for the full charge).
             if ($this->isAmountMismatch($p, $tx)) {
                 Log::warning('parakit.webhook.amount_mismatch', [
                     'gateway' => $p->gateway,
@@ -155,19 +159,41 @@ final class WebhookProcessor
                 return;
             }
 
+            // transitionTo() already saved if status moved — capture here, before
+            // the refunded_amount save clears it.
+            $statusChanged = $tx->wasChanged('status');
+
             // Partial refund webhooks carry the delta, not a running total.
             if ($p->status === PaymentStatus::Refunded) {
                 $tx->refunded_amount = (int) $tx->amount;
             } elseif ($p->status === PaymentStatus::PartiallyRefunded && $p->amount > 0) {
-                $tx->refunded_amount = (int) $tx->refunded_amount + $p->amount;
+                $next = (int) $tx->refunded_amount + $p->amount;
+                $charge = (int) $tx->amount;
+                if ($next > $charge) {
+                    Log::warning('parakit.webhook.refund_overflow', [
+                        'gateway' => $p->gateway,
+                        'tx' => $tx->id,
+                        'event_id' => $eventRow->event_id,
+                        'charge_amount' => $charge,
+                        'refunded_so_far' => (int) $tx->refunded_amount,
+                        'delta' => $p->amount,
+                    ]);
+                    $next = $charge;
+                }
+                $tx->refunded_amount = $next;
             }
+
+            $refundedAmountChanged = $tx->isDirty('refunded_amount');
 
             $tx->save();
             $eventRow->update(['processed_at' => now()]);
 
-            // transitionTo() returns true on idempotent no-ops; wasChanged() discriminates.
-            if ($tx->wasChanged('status')) {
+            if ($statusChanged) {
                 $this->fireEventFor($p->status, $tx);
+            } elseif ($refundedAmountChanged && in_array($p->status, [PaymentStatus::Refunded, PaymentStatus::PartiallyRefunded], true)) {
+                // A second PartiallyRefunded webhook updates the amount without
+                // moving status — bookkeeping listeners still need to hear it.
+                event(new PaymentRefunded($tx));
             }
         });
     }

@@ -213,7 +213,7 @@ abstract class AbstractGateway implements PaymentGateway
             return PaymentRefund::create([
                 'gateway' => $this->gatewayName,
                 'idempotency_key' => $storedKey,
-                'transaction_id' => $request->transactionId,
+                'gateway_transaction_id' => $request->transactionId,
                 'amount' => $request->amount,
                 'status' => 'pending',
             ]);
@@ -234,7 +234,7 @@ abstract class AbstractGateway implements PaymentGateway
 
     private function assertSameRefundOperation(PaymentRefund $attempt, RefundRequest $request): void
     {
-        if ($attempt->transaction_id === $request->transactionId && (int) $attempt->amount === $request->amount) {
+        if ($attempt->gateway_transaction_id === $request->transactionId && (int) $attempt->amount === $request->amount) {
             return;
         }
 

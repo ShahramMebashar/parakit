@@ -78,7 +78,7 @@ parakit works with:
 | `gatewayTransactionId` | `string` | The gateway's transaction id. |
 | `reference` | `string` | Your reference. |
 | `status` | `PaymentStatus` | The new status. |
-| `amount` | `int` | Minor units. May be `0` when the gateway does not report an amount. |
+| `amount` | `int` | Minor units. A `Paid` webhook whose `amount` disagrees with the stored charge — `0` included — is treated as a mismatch (see `on_amount_mismatch`). |
 | `currency` | `Currency` | |
 | `eventId` | `string` | Drives deduplication. |
 | `occurredAt` | `DateTimeImmutable` | Drives the staleness check. |
@@ -107,8 +107,8 @@ if a gateway is slow to deliver; lower it to tighten replay protection.
 
 ## `on_amount_mismatch`
 
-When a `Paid` webhook carries a non-zero amount that disagrees with the stored
-charge amount, parakit always logs a `parakit.webhook.amount_mismatch` warning.
+When a `Paid` webhook carries an amount that disagrees with the stored charge
+amount, parakit logs a `parakit.webhook.amount_mismatch` warning.
 `parakit.webhooks.on_amount_mismatch` controls what happens next:
 
 | Value | Behaviour |
@@ -116,8 +116,8 @@ charge amount, parakit always logs a `parakit.webhook.amount_mismatch` warning.
 | `log` (default) | Logs the warning and applies the status change anyway. |
 | `reject` | Logs the warning, marks the event processed, and refuses the status transition. The transaction does **not** move to `Paid`. |
 
-A webhook amount of `0` means "not reported" (some drivers re-verify via a
-status check that omits the amount) and is never treated as a mismatch.
+A reported `amount` of `0` is included — a buggy driver claiming "Paid, amount
+0" would otherwise silently settle the row for the full charged amount.
 
 ## Events {#events}
 
