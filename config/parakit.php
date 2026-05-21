@@ -25,7 +25,13 @@ return [
     'logging' => [
         'enabled' => true,
         'channel' => env('PARAKIT_LOG_CHANNEL', 'stack'),
-        'redact_keys' => ['password', 'token', 'secret', 'card', 'msisdn', 'authorization', 'transactionPin', 'mpin'],
+        // Each entry is a word-component token, not an exact key name.
+        // PayloadRedactor splits keys on _ - / whitespace and camelCase
+        // boundaries, then redacts any key with a matching component. So
+        // 'secret' covers client_secret/apiSecret, 'key' covers api_key/
+        // public_key/publicKey, etc. — without sweeping up 'secretary' or
+        // 'keyboard'.
+        'redact_keys' => ['password', 'token', 'secret', 'key', 'card', 'cvv', 'cvc', 'pan', 'msisdn', 'authorization', 'pin', 'mpin'],
         'retention_days' => 90,
     ],
 
