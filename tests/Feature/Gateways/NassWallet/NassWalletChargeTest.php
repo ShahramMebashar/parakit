@@ -103,6 +103,23 @@ it('re-sends the same orderId when a charge attempt is retried', function () {
     expect($seen)->toHaveCount(2)->and($seen[0])->toBe($seen[1]);
 });
 
+it('sanitises a user-supplied idempotencyKey before deriving orderId', function () {
+    fakeNwCharge();
+
+    // A no-hex user key would hexdec to 0 without the hash-first sanitisation.
+    Payment::driver('nasswallet')->charge(new PaymentRequest(
+        reference: 'INV-UK', amount: 5000, currency: Currency::IQD, description: 'd',
+        idempotencyKey: 'xyzpqrst',
+    ));
+
+    Http::assertSent(function ($req) {
+        if (!str_contains($req->url(), '/initTransaction')) {
+            return true;
+        }
+        return ctype_digit((string) $req['data']['orderId']) && $req['data']['orderId'] !== '0';
+    });
+});
+
 it('rejects a non-IQD charge — NassWallet settles IQD only', function () {
     fakeNwCharge();
 

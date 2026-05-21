@@ -42,33 +42,20 @@ final class NassWalletGateway extends AbstractGateway implements SupportsStatusC
 
     protected function performCharge(PaymentRequest $request): PaymentResponse
     {
-        // NassWallet settles IQD only. Reject other currencies up front rather
-        // than silently charging IQD while echoing the requested currency.
         if ($request->currency !== Currency::IQD) {
             throw new InvalidArgumentException(
                 'NassWallet settles IQD only; got ' . $request->currency->value
             );
         }
 
-        // Derive a numeric orderId from the stable idempotency key. Stable
-        // across retries, so a retried performCharge re-sends the SAME orderId
-        // and NassWallet recognises the duplicate instead of creating two
-        // transactions. 15 hex chars of sha256 = 60 bits (~1.15e18); crc32
-        // (the previous derivation) was only 2^32 — collisions at scale
-        // surface as confusing "Order ID already exists" responses.
-        $idemKey = $request->idempotencyKey ?? IdempotencyKey::derive(
-            $this->name(),
-            $request->reference,
-            $request->amount,
-            $request->currency->value,
-        );
-        $orderId = (string) hexdec(substr($idemKey, 0, 15));
+        // NassWallet needs a numeric, retry-stable orderId (60-bit int from 15 hex chars).
+        $orderId = IdempotencyKey::gatewayNumericForRequest($this->name(), $request);
 
         $raw = $this->client->initTransaction([
             'userIdentifier' => (string) ($this->config['username'] ?? ''),
             'transactionPin' => (string) ($this->config['transaction_pin'] ?? ''),
             'orderId' => $orderId,
-            // NassWallet expects the amount as a 2-decimal string.
+            // NassWallet expects amount as a 2-decimal string.
             'amount' => number_format($request->amount, 2, '.', ''),
             'languageCode' => $this->languageCode($request),
         ]);
@@ -112,13 +99,7 @@ final class NassWalletGateway extends AbstractGateway implements SupportsStatusC
         );
     }
 
-    /**
-     * NassWallet's callback carries no signature, so the notification body
-     * cannot be trusted on its own. The trust boundary is the checkTransaction
-     * endpoint: we read only the InitTransactionId from the callback, then
-     * re-fetch the authoritative state server-to-server. Any failure on that
-     * call is a verification failure (401 at the controller).
-     */
+    /** Unsigned callback: trust boundary is the checkTransaction endpoint, not the callback body. */
     public function handleWebhook(Request $request): WebhookPayload
     {
         $initTransactionId = (string) $request->input('data.InitTransactionId', '');
@@ -152,10 +133,7 @@ final class NassWalletGateway extends AbstractGateway implements SupportsStatusC
     }
 
     /**
-     * Parse a checkTransaction body. The endpoint has two documented response
-     * shapes: a flat `data.transactionStatus`, or a rich
-     * `data.TransactionHistoryList[]` carrying `TransactionStatus`/`Amount`.
-     * Returns [PaymentStatus, amount-in-minor-units].
+     * checkTransaction has two shapes: flat `data.transactionStatus` or rich `data.TransactionHistoryList[]`.
      *
      * @param array<string, mixed> $raw
      * @return array{0: PaymentStatus, 1: int}
@@ -168,7 +146,6 @@ final class NassWalletGateway extends AbstractGateway implements SupportsStatusC
         $amountText = null;
 
         if (!is_string($statusText)) {
-            // Rich shape — take the first history entry.
             $history = (array) ($data['TransactionHistoryList'] ?? []);
             $first = is_array($history[0] ?? null) ? $history[0] : [];
             $statusText = $first['TransactionStatus'] ?? '';
@@ -184,7 +161,6 @@ final class NassWalletGateway extends AbstractGateway implements SupportsStatusC
         return [$status, $amount];
     }
 
-    /** Build the hosted checkout-portal URL the customer is sent to. */
     private function redirectUrl(string $transactionId, string $token): string
     {
         $portal = rtrim((string) ($this->config['portal_url'] ?? ''), '/');

@@ -26,21 +26,30 @@ final class WebhookProcessor
     }
 
     /**
-     * Record-and-apply in one DB transaction. Either both the event row and
-     * the transaction update commit, or neither does. A worker death between
-     * the two used to leave an event row with processed_at=null that the
-     * gateway's retry would then dedupe-200 without ever applying — atomic
-     * commit closes that gap.
+     * Atomically records the event and applies it. A duplicate whose first arrival was
+     * parked (no local tx yet) self-heals by re-running applyToTransaction on retry.
      *
      * @throws DuplicateWebhookException
      */
     public function process(WebhookPayload $payload): PaymentWebhookEvent
     {
-        return DB::transaction(function () use ($payload) {
-            $eventRow = $this->insertEvent($payload);
-            $this->applyToTransaction($payload, $eventRow);
-            return $eventRow;
-        });
+        try {
+            return DB::transaction(function () use ($payload) {
+                $eventRow = $this->insertEvent($payload);
+                $this->applyToTransaction($payload, $eventRow);
+                return $eventRow;
+            });
+        } catch (DuplicateWebhookException $e) {
+            $existing = PaymentWebhookEvent::query()
+                ->where('gateway', $payload->gateway)
+                ->where('event_id', $payload->eventId)
+                ->first();
+            if ($existing !== null && $existing->processed_at === null) {
+                $this->applyToTransaction($payload, $existing);
+                return $existing->refresh();
+            }
+            throw $e;
+        }
     }
 
     /** @throws DuplicateWebhookException */
@@ -64,11 +73,8 @@ final class WebhookProcessor
                 'payload' => $payload->raw,
             ]);
         } catch (QueryException $e) {
-            // SQLSTATE class 23 = integrity constraint violation
-            // (23000 MySQL/SQLite, 23505 Postgres). Anything else is a real
-            // DB error and must surface — do not silently mask it as a
-            // "duplicate" or the caller will return 200 to the gateway and
-            // drop the event.
+            // SQLSTATE class 23 = integrity constraint violation; anything else must surface (a
+            // masked DB error would 200 the gateway and drop the event).
             if (!str_starts_with((string) $e->getCode(), '23')) {
                 throw $e;
             }
@@ -83,6 +89,16 @@ final class WebhookProcessor
     public function applyToTransaction(WebhookPayload $p, PaymentWebhookEvent $eventRow): void
     {
         DB::transaction(function () use ($p, $eventRow) {
+            /** @var PaymentWebhookEvent $eventRow */
+            $eventRow = PaymentWebhookEvent::query()
+                ->whereKey($eventRow->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($eventRow->processed_at !== null) {
+                return;
+            }
+
             $tx = PaymentTransaction::query()
                 ->where('gateway', $p->gateway)
                 ->where(function ($q) use ($p) {
@@ -93,11 +109,8 @@ final class WebhookProcessor
                 ->first();
 
             if ($tx === null) {
-                // Webhook arrived before charge() committed the local row
-                // (FIB's QR flow can complete in <1s). Leave processed_at
-                // NULL so a later sweeper / reconciliation pass can replay
-                // this event once the transaction lands. Do NOT mark it
-                // processed — that's silent data loss.
+                // Webhook beat the local row commit. Leave processed_at NULL so the replay
+                // sweeper retries once the tx lands; marking processed here is silent data loss.
                 Log::warning('parakit.webhook.no_local_tx', [
                     'gateway' => $p->gateway,
                     'reference' => $p->reference,
@@ -112,11 +125,7 @@ final class WebhookProcessor
             }
             $tx->last_raw_response = $p->raw;
 
-            // Amount integrity: a Paid webhook must settle the amount we
-            // charged. A driver that re-verifies via status-check may report
-            // amount 0 (no amount field) — that is "not reported", not a
-            // mismatch. on_amount_mismatch controls the action: 'log' (default)
-            // records a warning and proceeds; 'reject' refuses the transition.
+            // Amount 0 from a status re-check is "not reported", not a mismatch.
             if ($this->isAmountMismatch($p, $tx)) {
                 Log::warning('parakit.webhook.amount_mismatch', [
                     'gateway' => $p->gateway,
@@ -146,26 +155,24 @@ final class WebhookProcessor
                 return;
             }
 
+            // Partial refund webhooks carry the delta, not a running total.
+            if ($p->status === PaymentStatus::Refunded) {
+                $tx->refunded_amount = (int) $tx->amount;
+            } elseif ($p->status === PaymentStatus::PartiallyRefunded && $p->amount > 0) {
+                $tx->refunded_amount = (int) $tx->refunded_amount + $p->amount;
+            }
+
             $tx->save();
             $eventRow->update(['processed_at' => now()]);
 
-            // transitionTo() returns true even for idempotent no-ops, so we
-            // rely on Eloquent's wasChanged() to discriminate.
+            // transitionTo() returns true on idempotent no-ops; wasChanged() discriminates.
             if ($tx->wasChanged('status')) {
                 $this->fireEventFor($p->status, $tx);
             }
         });
     }
 
-    /**
-     * True when a Paid webhook's amount disagrees with the stored charge.
-     * Restricted to Paid because Refunded/PartiallyRefunded webhooks
-     * legitimately carry the refund amount, not the charge amount.
-     *
-     * Amount 0 is treated as a mismatch (not a free pass): a buggy gateway
-     * response of `Paid, amount: 0` would otherwise silently settle the row
-     * for the original charged amount.
-     */
+    /** Paid only — Refunded/PartiallyRefunded webhooks carry the refund amount, not the charge. */
     private function isAmountMismatch(WebhookPayload $p, PaymentTransaction $tx): bool
     {
         return $p->status === PaymentStatus::Paid

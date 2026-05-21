@@ -75,6 +75,13 @@ class ParakitServiceProvider extends ServiceProvider
                     ->withoutOverlapping();
             }
 
+            if (config('parakit.webhooks.replay.enabled', true)) {
+                $older = (int) config('parakit.webhooks.replay.older_than_minutes', 5);
+                $schedule->command('parakit:webhooks:replay', ['--older-than' => $older])
+                    ->everyFiveMinutes()
+                    ->withoutOverlapping();
+            }
+
             $schedule->command('parakit:logs:prune')
                 ->daily()
                 ->withoutOverlapping();
@@ -84,18 +91,13 @@ class ParakitServiceProvider extends ServiceProvider
     private function registerOctaneFlusher(): void
     {
         $this->callAfterResolving('events', function (Dispatcher $events) {
-            // Flush resolved gateway instances after every HTTP request.
-            // Under plain FPM this is a harmless no-op; under Octane it prevents
-            // stale tenant credentials from leaking into the next request on the
-            // same worker.
+            // Prevents stale tenant credentials leaking across requests under Octane.
             $events->listen(
                 \Illuminate\Foundation\Http\Events\RequestHandled::class,
                 fn () => $this->app->make(PaymentManager::class)->flushResolved()
             );
 
-            // Belt-and-suspenders: Octane fires RequestTerminated after its own
-            // sandbox reset. Listening to both ensures the flush fires regardless
-            // of which Octane server (Swoole / RoadRunner) is used.
+            // Octane fires RequestTerminated after its sandbox reset; listen to both.
             if (isset($_SERVER['LARAVEL_OCTANE'])
                 && class_exists(\Laravel\Octane\Events\RequestTerminated::class)
             ) {

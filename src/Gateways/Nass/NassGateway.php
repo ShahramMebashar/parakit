@@ -39,26 +39,13 @@ final class NassGateway extends AbstractGateway implements SupportsStatusCheck
 
     protected function performCharge(PaymentRequest $request): PaymentResponse
     {
-        // Recompute the same stable idempotency key AbstractGateway uses, then
-        // derive a numeric NassPay orderId from it. Stable across retries, so
-        // a retried performCharge re-sends the SAME orderId and NassPay
-        // recognises the duplicate instead of creating two transactions.
-        //
-        // 15 hex chars of the sha256 = 60 bits (~1.15e18). crc32 (the previous
-        // derivation) was only 2^32 — at scale, collisions surface as confusing
-        // "Order ID already exists" 409s from NassPay.
-        $idemKey = $request->idempotencyKey ?? IdempotencyKey::derive(
-            $this->name(),
-            $request->reference,
-            $request->amount,
-            $request->currency->value,
-        );
-        $orderId = (string) hexdec(substr($idemKey, 0, 15));
+        // NassPay needs a numeric, retry-stable orderId (60-bit int from 15 hex chars).
+        $orderId = IdempotencyKey::gatewayNumericForRequest($this->name(), $request);
 
         $payload = [
             'orderId' => $orderId,
             'orderDesc' => $request->description,
-            // NassPay expects the amount in MAJOR units as a string.
+            // NassPay expects amount in MAJOR units as a string.
             'amount' => Money::format($request->amount, $request->currency),
             'currency' => NassCurrencyMap::toCode($request->currency),
             'transactionType' => (int) ($this->config['transaction_type'] ?? 1),
@@ -107,9 +94,6 @@ final class NassGateway extends AbstractGateway implements SupportsStatusCheck
     }
 
     /**
-     * Shared parser for a NassPay checkStatus body. Returns
-     * [PaymentStatus, Currency, amount-in-minor-units].
-     *
      * @param array<string, mixed> $raw
      * @return array{0: PaymentStatus, 1: Currency, 2: int}
      */
@@ -128,13 +112,7 @@ final class NassGateway extends AbstractGateway implements SupportsStatusCheck
         return [$status, $currency, $amount];
     }
 
-    /**
-     * NassPay callbacks carry no signature, so the callback body cannot be
-     * trusted on its own. The trust boundary is the checkStatus endpoint: we
-     * read only the orderId from the callback, then re-fetch the authoritative
-     * state server-to-server. Any failure on that call is a verification
-     * failure (401 at the controller).
-     */
+    /** Unsigned callback: trust boundary is the checkStatus endpoint, not the callback body. */
     public function handleWebhook(Request $request): WebhookPayload
     {
         $orderId = (string) $request->input('orderId', '');

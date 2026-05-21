@@ -4,11 +4,12 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
-it('creates all three parakit tables when migrations run', function () {
+it('creates all parakit tables when migrations run', function () {
     $this->artisan('migrate')->assertSuccessful();
     expect(Schema::hasTable('payment_transactions'))->toBeTrue()
         ->and(Schema::hasTable('payment_webhook_events'))->toBeTrue()
-        ->and(Schema::hasTable('payment_logs'))->toBeTrue();
+        ->and(Schema::hasTable('payment_logs'))->toBeTrue()
+        ->and(Schema::hasTable('payment_refunds'))->toBeTrue();
 });
 
 it('enforces unique (gateway, event_id) on webhook events', function () {

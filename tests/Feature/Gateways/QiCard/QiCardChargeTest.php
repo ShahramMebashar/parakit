@@ -47,6 +47,25 @@ it('charges via QiCard and returns the hosted-form redirect url', function () {
         ->and($r->gatewayTransactionId)->toBe('f2bb43a8-488a-4281-977b-5b3418fc3c67');
 });
 
+it('sanitises a user-supplied idempotencyKey before deriving requestId', function () {
+    fakeQiCardCreate();
+
+    Payment::driver('qicard')->charge(new PaymentRequest(
+        reference: 'INV-UK', amount: 5000, currency: Currency::IQD, description: 'd',
+        idempotencyKey: 'order:123',
+    ));
+
+    Http::assertSent(function ($req) {
+        if (!str_contains($req->url(), '/api/v1/payment')) {
+            return true;
+        }
+        $rid = (string) $req['requestId'];
+        // Must not leak the raw user string into the gateway request and must
+        // produce a 36-char hex digest (QiCard's max-length constraint).
+        return $rid !== 'order:123' && strlen($rid) === 36 && ctype_xdigit($rid);
+    });
+});
+
 it('sends Basic Auth, X-Terminal-Id header, a ≤36 char requestId and a 2-decimal amount', function () {
     fakeQiCardCreate();
 

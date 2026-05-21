@@ -88,3 +88,27 @@ it('derives the same orderId for the same charge (retry-safe)', function () {
 
     expect($first->gatewayTransactionId)->toBe($second->gatewayTransactionId);
 });
+
+it('sanitises a user-supplied idempotencyKey before deriving orderId', function () {
+    Http::fake([
+        '*/auth/merchant/login' => Http::response(['data' => ['access_token' => 'tok']], 200),
+        '*/transaction' => Http::response(
+            json_decode(file_get_contents(__DIR__ . '/../../../Fixtures/Nass/init_success.json'), true),
+            201,
+        ),
+    ]);
+
+    // A user key with no hex characters would `hexdec` to 0 without the
+    // hash-first sanitisation — an orderId of "0" collides on every charge.
+    Payment::driver('nass')->charge(new PaymentRequest(
+        reference: 'INV-UK', amount: 5000, currency: Currency::IQD, description: 'd',
+        idempotencyKey: 'xyzpqrst',
+    ));
+
+    Http::assertSent(function ($req) {
+        if (!str_contains($req->url(), '/transaction')) {
+            return true;
+        }
+        return ctype_digit((string) $req['orderId']) && $req['orderId'] !== '0';
+    });
+});

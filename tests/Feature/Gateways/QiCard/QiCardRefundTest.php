@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Http;
 use Froshly\Parakit\DTOs\RefundRequest;
 use Froshly\Parakit\Enums\PaymentErrorCode;
 use Froshly\Parakit\Facades\Payment;
+use Froshly\Parakit\Support\IdempotencyKey;
 
 beforeEach(function () {
     Cache::flush();
@@ -77,6 +78,58 @@ it('returns a failed RefundResponse when QiCard answers status FAILED', function
         ->and($r->refundedAmount)->toBe(0)
         ->and($r->error)->not->toBeNull()
         ->and($r->error->rawCode)->toBe('82');
+});
+
+it('persists the RefundResponse and skips the gateway call on retry with the same idempotencyKey', function () {
+    Http::fake([
+        '*/api/v1/payment/*/refund' => Http::response(
+            json_decode(file_get_contents(__DIR__ . '/../../../Fixtures/QiCard/refund_success.json'), true),
+            200,
+        ),
+    ]);
+
+    $req = new RefundRequest(
+        transactionId: 'pid_1', amount: 5000, idempotencyKey: 'refund-order-1',
+    );
+
+    $first = Payment::driver('qicard')->refund($req);
+    Cache::flush();
+    $second = Payment::driver('qicard')->refund($req);
+
+    expect($first->success)->toBeTrue()
+        ->and($second->success)->toBeTrue()
+        ->and($second->refundId)->toBe($first->refundId);
+
+    $calls = 0;
+    Http::assertSent(function ($req) use (&$calls) {
+        if (str_contains($req->url(), '/refund')) {
+            $calls++;
+        }
+        return true;
+    });
+    expect($calls)->toBe(1);
+});
+
+it('derives requestId from the idempotencyKey so QiCard sees the same id on retries', function () {
+    Http::fake([
+        '*/api/v1/payment/*/refund' => Http::response(
+            json_decode(file_get_contents(__DIR__ . '/../../../Fixtures/QiCard/refund_success.json'), true),
+            200,
+        ),
+    ]);
+
+    Payment::driver('qicard')->refund(new RefundRequest(
+        transactionId: 'pid_1', amount: 5000, idempotencyKey: 'refund-order-2',
+    ));
+
+    $expected = substr(
+        IdempotencyKey::forGatewayOperation('qicard', 'refund', 'refund-order-2'),
+        0,
+        36,
+    );
+    Http::assertSent(fn ($req) =>
+        ! str_contains($req->url(), '/refund') || (string) $req['requestId'] === $expected,
+    );
 });
 
 it('maps QiCard error code 20 (REFUND_ERROR) to a failed RefundResponse', function () {

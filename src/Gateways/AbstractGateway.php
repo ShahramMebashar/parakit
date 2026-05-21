@@ -7,19 +7,25 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Froshly\Parakit\Contracts\PaymentGateway;
+use Froshly\Parakit\DTOs\PaymentError;
 use Froshly\Parakit\DTOs\PaymentRequest;
 use Froshly\Parakit\DTOs\PaymentResponse;
+use Froshly\Parakit\DTOs\RefundRequest;
+use Froshly\Parakit\DTOs\RefundResponse;
 use Froshly\Parakit\DTOs\WebhookPayload;
+use Froshly\Parakit\Enums\PaymentErrorCode;
 use Froshly\Parakit\Enums\PaymentStatus;
 use Froshly\Parakit\Events\GatewayTimeout;
 use Froshly\Parakit\Events\PaymentInitiated;
 use Froshly\Parakit\Exceptions\GatewayTimeoutException;
 use Froshly\Parakit\Exceptions\GatewayUnavailableException;
+use Froshly\Parakit\Models\PaymentRefund;
 use Froshly\Parakit\Models\PaymentTransaction;
 use Froshly\Parakit\Support\CircuitBreaker;
 use Froshly\Parakit\Support\CorrelationId;
 use Froshly\Parakit\Support\IdempotencyKey;
 use Froshly\Parakit\Support\PaymentLogger;
+use InvalidArgumentException;
 
 abstract class AbstractGateway implements PaymentGateway
 {
@@ -56,13 +62,8 @@ abstract class AbstractGateway implements PaymentGateway
             throw new GatewayUnavailableException("Circuit open for {$this->gatewayName}");
         }
 
-        $key = $request->idempotencyKey ?? IdempotencyKey::derive(
-            $this->gatewayName,
-            $request->reference,
-            $request->amount,
-            $request->currency->value,
-        );
-        $cacheKey = "parakit:idem:{$this->gatewayName}:{$key}";
+        $key = IdempotencyKey::localForRequest($this->gatewayName, $request);
+        $cacheKey = IdempotencyKey::cacheKey($this->gatewayName, 'charge', $key);
         $ttl = (int) config('parakit.reliability.idempotency_ttl', 86400);
 
         $cached = Cache::get($cacheKey);
@@ -70,14 +71,9 @@ abstract class AbstractGateway implements PaymentGateway
             return $cached;
         }
 
-        // Write-ahead: persist the charge intent BEFORE the gateway call, so a
-        // failed/timed-out/crashed attempt still leaves an audit row and any
-        // webhook that races the gateway response lands on an existing row.
+        // Write-ahead so a crashed attempt still leaves an audit row and races with the webhook land on an existing row.
         $tx = $this->persistIntent($request, $key);
         if ($tx === null) {
-            // A transaction with this idempotency key already exists (the
-            // cache entry expired but the row survives). Return its state
-            // rather than charging again.
             $existing = PaymentTransaction::query()
                 ->where('gateway', $this->gatewayName)
                 ->where('idempotency_key', $key)
@@ -85,8 +81,6 @@ abstract class AbstractGateway implements PaymentGateway
             return $this->responseFromTransaction($existing);
         }
 
-        // Fire exactly once per charge() call (not per retry attempt, and
-        // not on idempotency-cache hits).
         event(new PaymentInitiated($this->gatewayName, $request, $tx));
 
         $maxAttempts = max(1, (int) config('parakit.reliability.retry.max_attempts', 1));
@@ -102,9 +96,6 @@ abstract class AbstractGateway implements PaymentGateway
                 Cache::put($cacheKey, $response, $ttl);
                 return $response;
             } catch (GatewayUnavailableException $e) {
-                // A timeout is a GatewayUnavailableException subtype — it stays
-                // retryable, and additionally surfaces a GatewayTimeout event
-                // carrying which endpoint stalled and for how long.
                 if ($e instanceof GatewayTimeoutException) {
                     event(new GatewayTimeout($this->gatewayName, $e->endpoint, $e->durationMs));
                 }
@@ -123,8 +114,60 @@ abstract class AbstractGateway implements PaymentGateway
             }
         }
 
-        // Unreachable: the loop only exits via return or throw above.
         throw new GatewayUnavailableException("retry loop exhausted for {$this->gatewayName}");
+    }
+
+    /**
+     * Keyed refunds claim the operation in the DB before touching the gateway; transient/unknown
+     * failures leave the claim pending so a retry cannot issue a second money-movement call.
+     *
+     * @param callable(): RefundResponse $perform
+     */
+    protected function refundIdempotent(RefundRequest $request, callable $perform): RefundResponse
+    {
+        $key = $request->idempotencyKey;
+        if ($key === null || $key === '') {
+            return $perform();
+        }
+
+        $storedKey = IdempotencyKey::forGatewayOperation($this->gatewayName, 'refund', $key);
+        $attempt = $this->claimRefundAttempt($request, $storedKey);
+
+        if (! $attempt->wasRecentlyCreated) {
+            $this->assertSameRefundOperation($attempt, $request);
+
+            if ($attempt->status === 'succeeded') {
+                return $this->refundResponseFromAttempt($attempt);
+            }
+
+            throw new GatewayUnavailableException(
+                "Refund already pending or outcome unknown for {$this->gatewayName} idempotency key"
+            );
+        }
+
+        try {
+            $response = $perform();
+        } catch (GatewayUnavailableException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            $attempt->delete();
+            throw $e;
+        }
+
+        if (! $response->success) {
+            $attempt->delete();
+            return $response;
+        }
+
+        $attempt->forceFill([
+            'status' => 'succeeded',
+            'refund_id' => $response->refundId,
+            'refunded_amount' => $response->refundedAmount,
+            'response' => $this->refundResponseToArray($response),
+            'completed_at' => now(),
+        ])->save();
+
+        return $response;
     }
 
     abstract protected function performCharge(PaymentRequest $request): PaymentResponse;
@@ -141,11 +184,7 @@ abstract class AbstractGateway implements PaymentGateway
         return CorrelationId::current();
     }
 
-    /**
-     * Persist the charge intent as a Pending PaymentTransaction. Returns null
-     * when a row with this idempotency key already exists — the caller then
-     * returns that existing row instead of charging again.
-     */
+    /** Returns null when a row with this idempotency key already exists. */
     private function persistIntent(PaymentRequest $request, string $key): ?PaymentTransaction
     {
         try {
@@ -160,14 +199,90 @@ abstract class AbstractGateway implements PaymentGateway
                 'metadata' => $request->metadata,
             ]);
         } catch (QueryException $e) {
-            // SQLSTATE class 23 = integrity constraint violation (23000
-            // MySQL/SQLite, 23505 Postgres) — the unique idempotency_key
-            // index rejected a duplicate. Anything else is a real DB error.
+            // SQLSTATE class 23 = integrity constraint violation; anything else is a real DB error.
             if (!str_starts_with((string) $e->getCode(), '23')) {
                 throw $e;
             }
             return null;
         }
+    }
+
+    private function claimRefundAttempt(RefundRequest $request, string $storedKey): PaymentRefund
+    {
+        try {
+            return PaymentRefund::create([
+                'gateway' => $this->gatewayName,
+                'idempotency_key' => $storedKey,
+                'transaction_id' => $request->transactionId,
+                'amount' => $request->amount,
+                'status' => 'pending',
+            ]);
+        } catch (QueryException $e) {
+            if (!str_starts_with((string) $e->getCode(), '23')) {
+                throw $e;
+            }
+
+            /** @var PaymentRefund $attempt */
+            $attempt = PaymentRefund::query()
+                ->where('gateway', $this->gatewayName)
+                ->where('idempotency_key', $storedKey)
+                ->firstOrFail();
+
+            return $attempt;
+        }
+    }
+
+    private function assertSameRefundOperation(PaymentRefund $attempt, RefundRequest $request): void
+    {
+        if ($attempt->transaction_id === $request->transactionId && (int) $attempt->amount === $request->amount) {
+            return;
+        }
+
+        throw new InvalidArgumentException(
+            'Refund idempotency key was reused for a different transaction or amount'
+        );
+    }
+
+    private function refundResponseFromAttempt(PaymentRefund $attempt): RefundResponse
+    {
+        $stored = is_array($attempt->response) ? $attempt->response : [];
+        $raw = is_array($stored['raw'] ?? null) ? $stored['raw'] : [];
+        $error = null;
+        $storedError = $stored['error'] ?? null;
+
+        if (is_array($storedError)) {
+            $error = new PaymentError(
+                code: PaymentErrorCode::tryFrom((string) ($storedError['code'] ?? '')) ?? PaymentErrorCode::Unknown,
+                rawCode: (string) ($storedError['raw_code'] ?? ''),
+                rawMessage: (string) ($storedError['raw_message'] ?? ''),
+            );
+        }
+
+        return new RefundResponse(
+            success: true,
+            refundId: is_string($attempt->refund_id) && $attempt->refund_id !== '' ? $attempt->refund_id : null,
+            refundedAmount: (int) $attempt->refunded_amount,
+            error: $error,
+            raw: $raw,
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function refundResponseToArray(RefundResponse $response): array
+    {
+        return [
+            'success' => $response->success,
+            'refund_id' => $response->refundId,
+            'refunded_amount' => $response->refundedAmount,
+            'error' => $response->error === null ? null : [
+                'code' => $response->error->code->value,
+                'raw_code' => $response->error->rawCode,
+                'raw_message' => $response->error->rawMessage,
+            ],
+            'raw' => $response->raw,
+        ];
     }
 
     private function updateTransactionFromResponse(PaymentTransaction $tx, PaymentResponse $response): void
@@ -178,8 +293,7 @@ abstract class AbstractGateway implements PaymentGateway
             $tx->expires_at = \Illuminate\Support\Carbon::instance($response->expiresAt);
         }
 
-        // Pending->Pending (the normal FIB/ZainCash charge case) is a no-op
-        // for transitionTo(), so save the other columns explicitly.
+        // Pending->Pending is a no-op for transitionTo(), so save other columns explicitly.
         if ($response->status !== $tx->status) {
             $tx->transitionTo($response->status);
         } else {
@@ -189,13 +303,10 @@ abstract class AbstractGateway implements PaymentGateway
 
     private function markFailed(PaymentTransaction $tx): void
     {
-        // Best-effort: a DB error (or illegal transition) while recording the
-        // failure must never mask the original gateway exception the caller
-        // needs to see.
+        // Never mask the original gateway exception with a bookkeeping error.
         try {
             $tx->transitionTo(PaymentStatus::Failed);
         } catch (\Throwable) {
-            // intentionally swallowed
         }
     }
 
@@ -214,11 +325,6 @@ abstract class AbstractGateway implements PaymentGateway
         );
     }
 
-    /**
-     * Persist an audit-trail row for the charge attempt. PaymentLogger
-     * respects parakit.logging.enabled and redacts credentials via the
-     * configured PayloadRedactor, so no extra gating is needed here.
-     */
     private function logCharge(
         PaymentRequest $request,
         ?PaymentResponse $response,
@@ -238,7 +344,7 @@ abstract class AbstractGateway implements PaymentGateway
                 errorMessage: $error?->getMessage(),
             );
         } catch (\Throwable) {
-            // Audit logging must never mask the real charge outcome — swallow.
+            // Audit logging must never mask the real charge outcome.
         }
     }
 

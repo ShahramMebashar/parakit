@@ -41,8 +41,7 @@ final class FibGateway extends AbstractGateway implements SupportsCancel, Suppor
 
     protected function performCharge(PaymentRequest $request): PaymentResponse
     {
-        // FIB's `monetaryValue.amount` is a decimal string in MAJOR units.
-        // Convert minor-unit integers (our canonical DTO shape) before sending.
+        // FIB amount is a decimal string in MAJOR units.
         $params = [
             'amount' => Money::format($request->amount, $request->currency),
             'currency' => $request->currency->value,
@@ -50,14 +49,11 @@ final class FibGateway extends AbstractGateway implements SupportsCancel, Suppor
             'callback' => $request->callbackUrl ?? (string) ($this->config['callback_url'] ?? ''),
         ];
 
-        // In-FIB-app redirect after the user completes or cancels the payment.
         if ($request->returnUrl !== null && $request->returnUrl !== '') {
             $params['redirectUri'] = $request->returnUrl;
         }
 
-        // ISO-8601 durations (e.g. P7D, PT12H) controlling how long the payment
-        // stays payable / refundable. Per-request metadata overrides config;
-        // the key is omitted entirely when neither is set.
+        // ISO-8601 durations (P7D, PT12H, ...). Per-request metadata overrides config.
         $refundableFor = $request->metadata['refundable_for'] ?? $this->config['refundable_for'] ?? null;
         if ($refundableFor !== null && $refundableFor !== '') {
             $params['refundableFor'] = (string) $refundableFor;
@@ -67,8 +63,6 @@ final class FibGateway extends AbstractGateway implements SupportsCancel, Suppor
             $params['expiresIn'] = (string) $expiresIn;
         }
 
-        // FIB transaction category (ERP, POS, ECOMMERCE, ...); defaults to
-        // UNKNOWN at FIB when omitted.
         $category = $request->metadata['category'] ?? $this->config['category'] ?? null;
         if ($category !== null && $category !== '') {
             $params['category'] = (string) $category;
@@ -76,8 +70,6 @@ final class FibGateway extends AbstractGateway implements SupportsCancel, Suppor
 
         $raw = $this->client->createCharge($params);
 
-        // Trust an explicit status if FIB included one in the create response,
-        // otherwise default to Pending (the QR/deep-link/readable-code flow).
         $status = isset($raw['status'])
             ? FibStatusMap::toStatus((string) $raw['status'])
             : PaymentStatus::Pending;
@@ -117,11 +109,7 @@ final class FibGateway extends AbstractGateway implements SupportsCancel, Suppor
         );
     }
 
-    /**
-     * Cancel an active, unpaid FIB payment. FIB's cancel endpoint returns no
-     * payment body, so the authoritative post-cancel state is re-fetched via
-     * the status endpoint (`CANCELLED` -> PaymentStatus::Cancelled).
-     */
+    /** FIB cancel returns no body; re-fetch via status to get the post-cancel state. */
     public function cancel(string $gatewayTransactionId): PaymentResponse
     {
         $this->client->cancel($gatewayTransactionId);
@@ -131,13 +119,16 @@ final class FibGateway extends AbstractGateway implements SupportsCancel, Suppor
 
     public function refund(RefundRequest $request): RefundResponse
     {
+        return $this->refundIdempotent($request, fn () => $this->performRefund($request));
+    }
+
+    private function performRefund(RefundRequest $request): RefundResponse
+    {
         $raw = $this->client->refund($request->transactionId);
 
         $refundId = $raw['refundId'] ?? null;
         if (!is_string($refundId) || $refundId === '') {
-            throw new GatewayUnavailableException(
-                'FIB refund returned 200 without a refundId — treating as failure'
-            );
+            throw new GatewayUnavailableException('FIB refund returned 200 without a refundId');
         }
 
         return new RefundResponse(
@@ -148,12 +139,7 @@ final class FibGateway extends AbstractGateway implements SupportsCancel, Suppor
         );
     }
 
-    /**
-     * FIB callbacks deliver only `{ id, status }`. The trust boundary is the
-     * status endpoint, not the callback body — so we re-fetch server-to-server
-     * using our authenticated client. A missing id or any failure on the
-     * status call is treated as a verification failure (401 at the controller).
-     */
+    /** FIB callbacks deliver only `{ id, status }`; the status endpoint is the trust boundary. */
     public function handleWebhook(Request $request): WebhookPayload
     {
         $id = (string) $request->input('id', '');
@@ -187,10 +173,6 @@ final class FibGateway extends AbstractGateway implements SupportsCancel, Suppor
     }
 
     /**
-     * Shared parser for FIB status payloads. Returns [status, currency, amount].
-     * Unknown currencies fall back to IQD (logged in FibStatusMap path; here we
-     * just don't blow up — the spec only supports IQD/USD today).
-     *
      * @param array<string, mixed> $raw
      * @return array{0: PaymentStatus, 1: Currency, 2: int}
      */

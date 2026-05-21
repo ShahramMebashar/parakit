@@ -2,6 +2,21 @@
 
 All notable changes to `froshly/parakit` are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.9.2] — 2026-05-21
+
+Tightens the money-movement layer. `RefundRequest::idempotencyKey` is finally honored; cross-gateway idempotency stops crashing; refund receipts show real numbers.
+
+### Fixed
+- **Refunds are idempotent.** Pass an `idempotencyKey` and a retried `refund()` returns the original response instead of double-refunding. Backed by a new `payment_refunds` table — survives a cache flush. For QiCard, the key also seeds the gateway-side `requestId` so a retry after a cache miss still tells QiCard "same operation."
+- **User-supplied idempotency keys no longer break drivers.** `order:123` used to slip into FastPay/Nass/NassWallet/QiCard IDs raw — invalid order_ids, PHP 8 deprecations, low-entropy collisions. Keys are now hashed per-gateway before deriving anything; the docs' suggested format finally works.
+- **Same idempotency key on two gateways no longer crashes.** The unique index on `payment_transactions.idempotency_key` is now composite `(gateway, idempotency_key)`. Migration edited in place — fresh `migrate` picks it up.
+- **`refunded_amount` is populated on refund webhooks.** Receipts and `PaymentRefunded` listeners stop seeing `0`. Full refund sets it to the charge amount; partials accumulate. Per-event dedupe prevents double-counting.
+
+### Added
+- **Webhook orphan self-heal.** When a webhook beats the local charge row (FIB QR can land in <1s), the gateway's retry now applies the parked event in-place instead of returning a cold 200.
+- **`parakit:webhooks:replay` is scheduled by default** — every 5 minutes, alongside the sweeper. Disable with `parakit.webhooks.replay.enabled = false`.
+- **CI runs against Laravel 13** (in addition to 11/12) and gates merges on `composer validate --strict`.
+
 ## [0.9.1] — 2026-05-22
 
 ### Added

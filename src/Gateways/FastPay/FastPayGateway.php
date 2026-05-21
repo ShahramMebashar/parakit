@@ -39,8 +39,6 @@ final class FastPayGateway extends AbstractGateway implements SupportsStatusChec
 
     protected function performCharge(PaymentRequest $request): PaymentResponse
     {
-        // FastPay settles IQD only. Reject other currencies up front rather
-        // than silently charging IQD while echoing back the requested currency.
         if ($request->currency !== Currency::IQD) {
             throw new InvalidArgumentException(
                 'FastPay settles IQD only; got ' . $request->currency->value
@@ -56,8 +54,7 @@ final class FastPayGateway extends AbstractGateway implements SupportsStatusChec
             'success_url'  => $request->returnUrl ?? (string) ($this->config['success_url'] ?? ''),
             'cancel_url'   => (string) ($this->config['cancel_url'] ?? ''),
             'callback_url' => $request->callbackUrl ?? (string) ($this->config['callback_url'] ?? ''),
-            // FastPay's docs type `cart` as a string and the worked example
-            // sends a JSON-encoded string, so we encode rather than pass an array.
+            // FastPay's `cart` field is typed as a JSON-encoded string, not an array.
             'cart' => (string) json_encode([[
                 'name'       => $request->description,
                 'qty'        => 1,
@@ -93,10 +90,7 @@ final class FastPayGateway extends AbstractGateway implements SupportsStatusChec
                 'order_id' => $gatewayTransactionId,
             ]);
         } catch (FastPayApiException $e) {
-            // FastPay answers code 404 for an order it has not seen a payment
-            // for — that is "not paid yet", not a failure. Any other rejection
-            // (e.g. 422 bad credentials) is a real error and must surface
-            // rather than be silently reported as Pending.
+            // FastPay 404 means "not paid yet", not a failure.
             if ($e->apiCode === 404) {
                 return $this->statusResponse($gatewayTransactionId, PaymentStatus::Pending, 0, []);
             }
@@ -108,13 +102,13 @@ final class FastPayGateway extends AbstractGateway implements SupportsStatusChec
         return $this->statusResponse($gatewayTransactionId, $status, $amount, $raw);
     }
 
-    /**
-     * FastPay refunds are a push to a FastPay wallet, so they need the
-     * recipient's mobile number. RefundRequest carries no msisdn, so we first
-     * call validate to read the original payer's customer_mobile_number — a
-     * refund therefore always returns funds to whoever paid.
-     */
+    /** Refunds always go back to the original payer's mobile number (read via validate). */
     public function refund(RefundRequest $request): RefundResponse
+    {
+        return $this->refundIdempotent($request, fn () => $this->performRefund($request));
+    }
+
+    private function performRefund(RefundRequest $request): RefundResponse
     {
         try {
             $validated = $this->client->validate($this->credentials() + [
@@ -124,15 +118,11 @@ final class FastPayGateway extends AbstractGateway implements SupportsStatusChec
             return $this->failedRefund($e->getMessage());
         }
 
-        // The refund recipient must be the original payer. Refuse rather than
-        // hand FastPay an empty msisdn for a money-movement call.
         $msisdn = (string) data_get($validated, 'data.customer_mobile_number', '');
         if ($msisdn === '') {
             return $this->failedRefund('FastPay validate returned no payer mobile number');
         }
 
-        // Defense-in-depth: reject a refund larger than what was received
-        // before touching the gateway (FastPay also rejects it server-side).
         [, $receivedAmount] = $this->parseValidateData($validated);
         if ($receivedAmount > 0 && $request->amount > $receivedAmount) {
             return $this->failedRefund('Refund amount exceeds the original received amount');
@@ -173,13 +163,7 @@ final class FastPayGateway extends AbstractGateway implements SupportsStatusChec
         );
     }
 
-    /**
-     * FastPay's IPN carries no signature, so the notification body cannot be
-     * trusted on its own. The trust boundary is the validate endpoint: we read
-     * only the order_id from the IPN, then re-fetch the authoritative state
-     * server-to-server. Any failure on that call — including a not-found
-     * order — is a verification failure (401 at the controller).
-     */
+    /** Unsigned IPN: trust boundary is the validate endpoint, not the callback body. */
     public function handleWebhook(Request $request): WebhookPayload
     {
         $orderId = (string) $request->input('order_id', '');
@@ -213,8 +197,6 @@ final class FastPayGateway extends AbstractGateway implements SupportsStatusChec
     }
 
     /**
-     * Parse a FastPay validate body. Returns [PaymentStatus, amount-in-minor-units].
-     *
      * @param array<string, mixed> $raw
      * @return array{0: PaymentStatus, 1: int}
      */
@@ -251,22 +233,10 @@ final class FastPayGateway extends AbstractGateway implements SupportsStatusChec
         );
     }
 
-    /**
-     * FastPay's order_id must be 8-32 alphanumeric characters and identical
-     * across charge retries. The shared idempotency key is a 64-char sha256
-     * hex digest (alphanumeric); the first 24 chars satisfy the constraint and
-     * stay stable because AbstractGateway re-derives the same key on retry.
-     */
+    /** order_id must be 8-32 alphanumeric chars and identical across retries. */
     private function deriveOrderId(PaymentRequest $request): string
     {
-        $idemKey = $request->idempotencyKey ?? IdempotencyKey::derive(
-            $this->name(),
-            $request->reference,
-            $request->amount,
-            $request->currency->value,
-        );
-
-        return substr($idemKey, 0, 24);
+        return IdempotencyKey::gatewayHexPrefixForRequest($this->name(), $request, 24);
     }
 
     /** @return array<string, string> */

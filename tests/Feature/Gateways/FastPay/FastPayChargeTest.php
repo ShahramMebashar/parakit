@@ -95,3 +95,17 @@ it('derives the same order_id for the same charge (retry-safe)', function () {
 
     expect($first->gatewayTransactionId)->toBe($second->gatewayTransactionId);
 });
+
+it('sanitises a user-supplied idempotencyKey before deriving order_id', function () {
+    fakeFastPayInitiation();
+
+    Payment::driver('fastpay')->charge(new PaymentRequest(
+        reference: 'INV-UK', amount: 5000, currency: Currency::IQD, description: 'd',
+        idempotencyKey: 'order:123',
+    ));
+
+    Http::assertSent(function ($req) {
+        $orderId = (string) $req['order_id'];
+        return ctype_alnum($orderId) && strlen($orderId) === 24;
+    });
+});

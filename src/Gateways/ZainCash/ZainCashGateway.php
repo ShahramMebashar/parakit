@@ -31,8 +31,7 @@ final class ZainCashGateway extends AbstractGateway implements SupportsStatusChe
     {
         parent::__construct($name, $config);
 
-        // api_key verifies callback JWTs; client_secret authenticates the
-        // OAuth2 token endpoint — two distinct secrets in v2.
+        // v2 uses two distinct secrets: api_key verifies callback JWTs, client_secret is for OAuth2.
         $this->jwt = new ZainCashJwt((string) $config['api_key']);
         $this->client = new ZainCashClient(
             baseUrl: (string) $config['base_url'],
@@ -48,15 +47,8 @@ final class ZainCashGateway extends AbstractGateway implements SupportsStatusChe
 
     protected function performCharge(PaymentRequest $request): PaymentResponse
     {
-        // externalReferenceId must be stable across AbstractGateway retries —
-        // a random UUID per call would create duplicate ZainCash transactions.
-        // Deriving a UUIDv5 from the framework idempotency key keeps it stable.
-        $idemKey = $request->idempotencyKey ?? IdempotencyKey::derive(
-            $this->name(),
-            $request->reference,
-            $request->amount,
-            $request->currency->value,
-        );
+        // externalReferenceId must be stable across retries; derive a UUIDv5 from the idempotency key.
+        $idemKey = IdempotencyKey::localForRequest($this->name(), $request);
         $externalReferenceId = Uuid::uuid5(
             Uuid::NAMESPACE_URL,
             'parakit:zaincash:' . $idemKey,
@@ -135,11 +127,12 @@ final class ZainCashGateway extends AbstractGateway implements SupportsStatusChe
 
     public function refund(RefundRequest $request): RefundResponse
     {
-        // v2 reverse is full-refund only — there is no amount parameter. If the
-        // caller asked for a partial refund (amount != original charge), reject
-        // before touching the gateway. The original amount comes from the
-        // persisted transaction row; if no row exists we cannot validate and
-        // proceed with a full reverse.
+        return $this->refundIdempotent($request, fn () => $this->performRefund($request));
+    }
+
+    private function performRefund(RefundRequest $request): RefundResponse
+    {
+        // v2 reverse is full-refund only; reject partial refunds before touching the gateway.
         $tx = PaymentTransaction::query()
             ->where('gateway', $this->name())
             ->where('gateway_transaction_id', $request->transactionId)
@@ -171,14 +164,7 @@ final class ZainCashGateway extends AbstractGateway implements SupportsStatusChe
         );
     }
 
-    /**
-     * Verify a ZainCash v2 callback (redirect token or server webhook).
-     *
-     * Both the redirect (`?token=`) and the webhook (`{webhook_token}`) deliver
-     * an HS256 JWT signed with the merchant API key. The JWT signature is the
-     * trust boundary — decoding with our shared secret rejects any forged or
-     * tampered payload, and the algorithm is pinned in ZainCashJwt.
-     */
+    /** Redirect (`?token=`) and webhook (`{webhook_token}`) both deliver an HS256 JWT signed with api_key. */
     public function handleWebhook(Request $request): WebhookPayload
     {
         $token = (string) ($request->input('webhook_token')
@@ -203,8 +189,7 @@ final class ZainCashGateway extends AbstractGateway implements SupportsStatusChe
         $amountInfo = (array) ($data['amount'] ?? []);
         $transactionId = (string) ($data['transactionId'] ?? '');
 
-        // Prefer ZainCash's own eventId for idempotency; fall back to a derived
-        // key only if the claim is absent.
+        // Prefer ZainCash's eventId; fall back to a derived key only if absent.
         $eventId = (string) ($claims['eventId'] ?? '');
         if ($eventId === '') {
             $eventId = $transactionId . ':' . $status->value;
@@ -225,10 +210,7 @@ final class ZainCashGateway extends AbstractGateway implements SupportsStatusChe
         );
     }
 
-    /**
-     * A REFUND_FAILED event means the reversal failed; the payment itself is
-     * unchanged, so map currentStatus as usual but log the failed reversal.
-     */
+    /** REFUND_FAILED leaves the payment unchanged; log and map currentStatus normally. */
     private function onRefundFailed(string $currentStatus): PaymentStatus
     {
         Log::warning('parakit.zaincash.refund_failed', ['currentStatus' => $currentStatus]);
@@ -241,13 +223,7 @@ final class ZainCashGateway extends AbstractGateway implements SupportsStatusChe
         return ZainCashStatusMap::toStatus($currentStatus);
     }
 
-    /**
-     * Normalize an application locale to a ZainCash v2 language code.
-     *
-     * The v2 doc's params table specifies En/Ar/Ku; its curl examples send
-     * lowercase. We follow the documented contract (title-case) — confirm
-     * against UAT and switch if the gateway rejects it.
-     */
+    /** v2 documented contract is title-case (En/Ar/Ku) even though curl examples use lowercase. */
     private function normalizeLang(string $lang): string
     {
         return match (strtolower($lang)) {

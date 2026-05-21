@@ -46,8 +46,6 @@ final class QiCardGateway extends AbstractGateway implements SupportsStatusCheck
 
     protected function performCharge(PaymentRequest $request): PaymentResponse
     {
-        // QiCard settles IQD only. Reject other currencies up front rather
-        // than silently charging IQD while echoing back the requested currency.
         if ($request->currency !== Currency::IQD) {
             throw new InvalidArgumentException(
                 'QiCard settles IQD only; got ' . $request->currency->value
@@ -72,9 +70,7 @@ final class QiCardGateway extends AbstractGateway implements SupportsStatusCheck
             $body['customerInfo'] = $customer;
         }
 
-        // QiCard caps additionalInfo at 10 string-typed properties. Cast all
-        // values to strings and slice — silently ignoring rather than
-        // exploding lets metadata-heavy callers stay compatible.
+        // additionalInfo caps at 10 string-typed properties.
         if ($request->metadata !== []) {
             $info = [];
             foreach ($request->metadata as $k => $v) {
@@ -128,12 +124,7 @@ final class QiCardGateway extends AbstractGateway implements SupportsStatusCheck
         );
     }
 
-    /**
-     * Cancel an active QiCard payment. The cancel response carries the full
-     * payment object plus a `cancels[]` array of attempts; we use the
-     * top-level `canceled` flag combined with the latest attempt to decide
-     * whether the payment is now terminally Cancelled or still Pending.
-     */
+    /** Cancel response carries `canceled` plus `cancels[]`; both must agree to mark terminally Cancelled. */
     public function cancel(string $gatewayTransactionId): PaymentResponse
     {
         $raw = $this->client->cancel($gatewayTransactionId, [
@@ -164,8 +155,18 @@ final class QiCardGateway extends AbstractGateway implements SupportsStatusCheck
 
     public function refund(RefundRequest $request): RefundResponse
     {
+        return $this->refundIdempotent($request, fn () => $this->performRefund($request));
+    }
+
+    private function performRefund(RefundRequest $request): RefundResponse
+    {
+        // Keyed refunds reuse the same QiCard requestId; unkeyed remain unique per call.
+        $requestId = $request->idempotencyKey !== null
+            ? IdempotencyKey::gatewayHexPrefixForOperation($this->name(), 'refund', $request->idempotencyKey, 36)
+            : $this->newRequestId();
+
         $body = [
-            'requestId' => $this->newRequestId(),
+            'requestId' => $requestId,
             'amount'    => $this->amountString($request->amount),
         ];
         if ($request->reason !== null && $request->reason !== '') {
@@ -215,18 +216,8 @@ final class QiCardGateway extends AbstractGateway implements SupportsStatusCheck
     }
 
     /**
-     * QiCard webhook handling has two modes:
-     *
-     *   1. **Verified**: when `qicard.public_key` is configured, the
-     *      X-Signature header is mandatory and verified via
-     *      QiCardSignatureVerifier. Tampered or missing signatures throw
-     *      InvalidWebhookSignatureException (→ 401 at the controller).
-     *
-     *   2. **Unverified-with-fallback**: when no public key is configured we
-     *      cannot prove authenticity, so we re-fetch the payment status
-     *      server-to-server and trust that body instead. A
-     *      `parakit.qicard.webhook.unverified` warning is logged for every
-     *      such request so operators see this is happening.
+     * Two modes: with `qicard.public_key`, X-Signature is mandatory and verified;
+     * without it, re-fetch via getStatus and log `parakit.qicard.webhook.unverified`.
      */
     public function handleWebhook(Request $request): WebhookPayload
     {
@@ -257,10 +248,6 @@ final class QiCardGateway extends AbstractGateway implements SupportsStatusCheck
     }
 
     /**
-     * Resolve the authoritative body for a webhook: either the verified
-     * inbound payload, or a server-to-server status re-fetch when no public
-     * key is configured.
-     *
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
      */
@@ -294,8 +281,6 @@ final class QiCardGateway extends AbstractGateway implements SupportsStatusCheck
     }
 
     /**
-     * Parse a QiCard payment or status body.
-     *
      * @param array<string, mixed> $raw
      * @return array{0: PaymentStatus, 1: int}
      */
@@ -303,8 +288,7 @@ final class QiCardGateway extends AbstractGateway implements SupportsStatusCheck
     {
         $status = QiCardStatusMap::toStatus((string) ($raw['status'] ?? ''));
 
-        // confirmedAmount is the post-3DS settled value when present;
-        // amount is the original create-time value. Either is acceptable.
+        // confirmedAmount is the post-3DS settled value; amount is create-time.
         $rawAmount = $raw['confirmedAmount'] ?? $raw['amount'] ?? null;
         $amount = is_numeric($rawAmount)
             ? (int) round((float) $rawAmount * Currency::IQD->minorUnitFactor())
@@ -318,9 +302,7 @@ final class QiCardGateway extends AbstractGateway implements SupportsStatusCheck
     {
         $cancels = $raw['cancels'] ?? null;
         if (!is_array($cancels) || $cancels === []) {
-            // QiCard's cancel response sometimes omits the cancels[] array
-            // entirely; in that case `canceled: true` at the top level is
-            // authoritative.
+            // When cancels[] is omitted, top-level `canceled: true` is authoritative.
             return true;
         }
 
@@ -332,52 +314,25 @@ final class QiCardGateway extends AbstractGateway implements SupportsStatusCheck
         return (bool) ($last['successfully'] ?? false);
     }
 
-    /**
-     * QiCard accepts `requestId` up to 36 chars. IdempotencyKey::derive
-     * produces a 64-char sha256 hex — taking the first 36 chars keeps it
-     * within the constraint AND stable across retries, so a retried charge
-     * sends the same requestId QiCard already saw (→ no duplicate payment).
-     */
+    /** QiCard requestId is capped at 36 chars and must be stable across charge retries. */
     private function deriveRequestId(PaymentRequest $request): string
     {
-        $key = $request->idempotencyKey ?? IdempotencyKey::derive(
-            $this->name(),
-            $request->reference,
-            $request->amount,
-            $request->currency->value,
-        );
-
-        return substr($key, 0, 36);
+        return IdempotencyKey::gatewayHexPrefixForRequest($this->name(), $request, 36);
     }
 
-    /**
-     * Generate a fresh requestId for a non-idempotent operation
-     * (cancel / refund). Each call MUST be unique per QiCard's terminal
-     * constraints; Str::uuid() yields a 36-char UUIDv4 which fits.
-     */
+    /** Each non-idempotent call (cancel/refund) requires a unique 36-char requestId. */
     private function newRequestId(): string
     {
         return Str::uuid()->toString();
     }
 
-    /**
-     * Format a parakit int amount (in IQD minor units, factor=1) as the
-     * 2-decimal string QiCard's REST bodies expect. The webhook signature
-     * canonical string uses 3 decimals — see QiCardSignatureVerifier.
-     */
+    /** REST bodies use 2 decimals; the webhook signature canonical string uses 3 (see QiCardSignatureVerifier). */
     private function amountString(int $minor): string
     {
         return number_format($minor, 2, '.', '');
     }
 
-    /**
-     * Build the optional customerInfo block from parakit's flat
-     * PaymentRequest fields. parakit carries `customerName` as a single
-     * string; we route the whole thing into `firstName` rather than guess
-     * at a name split.
-     *
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     private function customerInfo(PaymentRequest $request): array
     {
         $info = [];

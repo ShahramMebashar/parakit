@@ -5,7 +5,10 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Froshly\Parakit\DTOs\RefundRequest;
 use Froshly\Parakit\Enums\PaymentErrorCode;
+use Froshly\Parakit\Exceptions\GatewayUnavailableException;
 use Froshly\Parakit\Facades\Payment;
+use Froshly\Parakit\Models\PaymentRefund;
+use Froshly\Parakit\Support\IdempotencyKey;
 
 beforeEach(function () {
     Cache::flush();
@@ -26,6 +29,67 @@ function fakeFastPayValidate(): mixed
         200,
     );
 }
+
+it('persists the RefundResponse and skips the gateway on retry with the same idempotencyKey', function () {
+    Http::fake([
+        '*/api/v1/public/pgw/payment/validate' => fakeFastPayValidate(),
+        '*/api/v1/public/pgw/payment/refund' => Http::response(
+            json_decode(file_get_contents(__DIR__ . '/../../../Fixtures/FastPay/refund_success.json'), true),
+            200,
+        ),
+    ]);
+
+    $req = new RefundRequest(
+        transactionId: 'ORD12345678', amount: 5000, idempotencyKey: 'rfk-1',
+    );
+
+    $first = Payment::driver('fastpay')->refund($req);
+    Cache::flush();
+    $second = Payment::driver('fastpay')->refund($req);
+
+    expect($first->success)->toBeTrue()
+        ->and($second->refundId)->toBe($first->refundId)
+        ->and(PaymentRefund::query()->count())->toBe(1)
+        ->and(PaymentRefund::first()->idempotency_key)->toBe(
+            IdempotencyKey::forGatewayOperation('fastpay', 'refund', 'rfk-1'),
+        );
+
+    $refunds = 0;
+    Http::assertSent(function ($req) use (&$refunds) {
+        if (str_contains($req->url(), '/payment/refund')) {
+            $refunds++;
+        }
+        return true;
+    });
+    expect($refunds)->toBe(1);
+});
+
+it('fails closed when a refund idempotency key is already pending', function () {
+    PaymentRefund::create([
+        'gateway' => 'fastpay',
+        'idempotency_key' => IdempotencyKey::forGatewayOperation('fastpay', 'refund', 'rfk-pending'),
+        'transaction_id' => 'ORD12345678',
+        'amount' => 5000,
+        'status' => 'pending',
+    ]);
+
+    Http::fake([
+        '*/api/v1/public/pgw/payment/validate' => fakeFastPayValidate(),
+        '*/api/v1/public/pgw/payment/refund' => Http::response(
+            json_decode(file_get_contents(__DIR__ . '/../../../Fixtures/FastPay/refund_success.json'), true),
+            200,
+        ),
+    ]);
+
+    $req = new RefundRequest(
+        transactionId: 'ORD12345678', amount: 5000, idempotencyKey: 'rfk-pending',
+    );
+
+    expect(fn () => Payment::driver('fastpay')->refund($req))
+        ->toThrow(GatewayUnavailableException::class);
+
+    Http::assertNotSent(fn ($req) => str_contains($req->url(), '/payment/refund'));
+});
 
 it('refunds by looking up the payer msisdn via validate, then calling refund', function () {
     Http::fake([

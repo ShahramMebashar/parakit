@@ -9,10 +9,14 @@ return [
         'middleware' => ['api'],
         'tolerance_seconds' => 300,
 
-        // Action when a Paid webhook's amount disagrees with the charged
-        // amount: 'log' records a parakit.webhook.amount_mismatch warning and
-        // still applies the transition; 'reject' refuses the transition.
+        // 'log' warns and still applies; 'reject' refuses the transition.
         'on_amount_mismatch' => env('PARAKIT_WEBHOOK_ON_AMOUNT_MISMATCH', 'log'),
+
+        // Scheduled replay catches orphan events whose gateway stopped retrying.
+        'replay' => [
+            'enabled' => env('PARAKIT_WEBHOOK_REPLAY_ENABLED', true),
+            'older_than_minutes' => 5,
+        ],
     ],
 
     'reliability' => [
@@ -25,12 +29,8 @@ return [
     'logging' => [
         'enabled' => true,
         'channel' => env('PARAKIT_LOG_CHANNEL', 'stack'),
-        // Each entry is a word-component token, not an exact key name.
-        // PayloadRedactor splits keys on _ - / whitespace and camelCase
-        // boundaries, then redacts any key with a matching component. So
-        // 'secret' covers client_secret/apiSecret, 'key' covers api_key/
-        // public_key/publicKey, etc. — without sweeping up 'secretary' or
-        // 'keyboard'.
+        // Entries are word-component tokens matched against camelCase / snake_case key parts,
+        // so 'secret' covers client_secret/apiSecret without sweeping 'secretary'.
         'redact_keys' => ['password', 'token', 'secret', 'key', 'card', 'cvv', 'cvc', 'pan', 'msisdn', 'authorization', 'pin', 'mpin'],
         'retention_days' => 90,
     ],
@@ -42,20 +42,17 @@ return [
     ],
 
     'receipts' => [
-        // Template used when none is given at runtime: modern | classic | minimal.
+        // modern | classic | minimal
         'template' => env('PARAKIT_RECEIPTS_TEMPLATE', 'modern'),
 
-        // Default disk + path for ReceiptDocument::save().
         'disk'     => env('PARAKIT_RECEIPTS_DISK', 'local'),
         'path'     => 'receipts',
         // Tokens: {type} {reference} {id}
         'filename' => '{type}-{reference}.pdf',
 
-        // Locale the receipt is rendered in: 'app' uses the current app locale.
+        // 'app' uses the current app locale.
         'locale' => 'app',
 
-        // Transaction metadata keys the receipt falls back to for customer
-        // details when none are passed explicitly.
         'metadata' => [
             'name_key'   => 'customer_name',
             'email_key'  => 'customer_email',
@@ -63,7 +60,6 @@ return [
             'locale_key' => 'locale',
         ],
 
-        // Merchant block printed on every receipt.
         'merchant' => [
             'name'          => env('PARAKIT_MERCHANT_NAME', config('app.name')),
             'address'       => env('PARAKIT_MERCHANT_ADDRESS'),
@@ -75,8 +71,7 @@ return [
             'paper'       => 'a4',
             'orientation' => 'portrait',
             'options'     => [
-                // DejaVu Sans is the only bundled dompdf font with Arabic /
-                // Kurdish glyph coverage — required for ar/ckb receipts.
+                // DejaVu Sans is the only bundled dompdf font with Arabic/Kurdish coverage.
                 'defaultFont'      => 'DejaVu Sans',
                 'isRemoteEnabled'  => false,
             ],
@@ -119,9 +114,7 @@ return [
         ],
         'nasswallet' => [
             'driver'          => 'nasswallet',
-            // Full endpoint base — the path differs by environment:
-            //   UAT  https://uatgw1.nasswallet.com/payment/transaction
-            //   PROD https://gw-api.nasswallet.com/phase3/payment/transaction
+            // Path differs by env: UAT /payment/transaction, PROD /phase3/payment/transaction.
             'base_url'        => env('NASSWALLET_BASE_URL', 'https://uatgw1.nasswallet.com/payment/transaction'),
             'portal_url'      => env('NASSWALLET_PORTAL_URL', 'https://uatcheckout1.nasswallet.com'),
             'basic_token'     => env('NASSWALLET_BASIC_TOKEN', 'TUVSQ0hBTlRfUEFZTUVOVF9HQVRFV0FZOk1lcmNoYW50R2F0ZXdheUBBZG1pbiMxMjM='),
@@ -147,11 +140,8 @@ return [
             'password'           => env('QICARD_PASSWORD'),
             'terminal_id'        => env('QICARD_TERMINAL_ID'),
             'locale'             => env('QICARD_LOCALE', 'en_US'),
-            // RSA-2048 public key (PEM) used to verify webhook X-Signature
-            // headers. When unset, parakit cannot prove webhook authenticity
-            // from the body alone — it falls back to a server-to-server
-            // status re-check and logs `parakit.qicard.webhook.unverified`.
-            // Obtain the key from QiCard support.
+            // RSA-2048 PEM verifying webhook X-Signature; when unset, parakit falls back to a
+            // server-to-server status re-check and logs `parakit.qicard.webhook.unverified`.
             'public_key'         => env('QICARD_PUBLIC_KEY'),
             'finish_payment_url' => env('QICARD_FINISH_PAYMENT_URL'),
             'notification_url'   => env('QICARD_NOTIFICATION_URL'),

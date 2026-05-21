@@ -53,6 +53,20 @@ it('derives a key when caller did not supply one', function () {
     expect($gw->calls)->toBe(1);
 });
 
+it('isolates idempotency keys by gateway — the same key on two gateways is two charges', function () {
+    Cache::flush();
+    $a = new DummyGateway('gw_a', []);
+    $b = new DummyGateway('gw_b', []);
+    $req = new PaymentRequest('ord_shared', 5000, Currency::IQD, 'd', idempotencyKey: 'shared-key');
+
+    $a->charge($req);
+    $b->charge($req);
+
+    expect(PaymentTransaction::query()->count())->toBe(2)
+        ->and(PaymentTransaction::query()->where('gateway', 'gw_a')->count())->toBe(1)
+        ->and(PaymentTransaction::query()->where('gateway', 'gw_b')->count())->toBe(1);
+});
+
 it('retries on transient failure and ultimately returns success', function () {
     config()->set('parakit.reliability.retry.max_attempts', 3);
     config()->set('parakit.reliability.retry.base_delay_ms', 1);

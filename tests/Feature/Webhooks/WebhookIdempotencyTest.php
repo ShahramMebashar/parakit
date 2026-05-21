@@ -10,6 +10,7 @@ use Froshly\Parakit\DTOs\WebhookPayload;
 use Illuminate\Support\Facades\Event;
 use Froshly\Parakit\Events\PaymentSucceeded;
 use Froshly\Parakit\Events\WebhookReceived;
+use Froshly\Parakit\Support\WebhookProcessor;
 
 beforeEach(function () {
     $this->artisan('migrate');
@@ -92,6 +93,32 @@ it('preserves a webhook arriving before the local tx commits (processed_at left 
     expect(PaymentWebhookEvent::first()->processed_at)->toBeNull();
 });
 
+it('self-heals on a gateway retry when an orphan event becomes applyable', function () {
+    Event::fake([PaymentSucceeded::class]);
+
+    // First delivery: no local transaction yet, so the event row is parked
+    // with processed_at = null.
+    registerStubDriver('evt_orphan', PaymentStatus::Paid, new DateTimeImmutable());
+    $this->postJson('/payments/webhooks/stub')->assertStatus(200);
+
+    expect(PaymentWebhookEvent::first()->processed_at)->toBeNull();
+
+    // Now the charge() side commits the local row (race resolved).
+    PaymentTransaction::create([
+        'gateway' => 'stub', 'reference' => 'ord_1', 'gateway_transaction_id' => 'gw_1',
+        'status' => PaymentStatus::Pending, 'amount' => 5000,
+        'currency' => Currency::IQD, 'correlation_id' => 'c',
+    ]);
+
+    // Gateway retries the same event. Used to return 200 duplicate cold
+    // without applying; now it heals — the parked event lands on the tx.
+    $this->postJson('/payments/webhooks/stub')->assertStatus(200);
+
+    expect(PaymentTransaction::first()->status)->toBe(PaymentStatus::Paid)
+        ->and(PaymentWebhookEvent::first()->processed_at)->not->toBeNull();
+    Event::assertDispatched(PaymentSucceeded::class);
+});
+
 it('skips illegal transitions silently (logs, returns 200) without re-firing events', function () {
     Event::fake([PaymentSucceeded::class]);
 
@@ -107,6 +134,101 @@ it('skips illegal transitions silently (logs, returns 200) without re-firing eve
 
     expect(PaymentTransaction::first()->status)->toBe(PaymentStatus::Refunded);
     Event::assertNotDispatched(PaymentSucceeded::class);
+});
+
+it('sets refunded_amount to the full transaction amount on a Refunded webhook', function () {
+    PaymentTransaction::create([
+        'gateway' => 'stub', 'reference' => 'ord_1',
+        'gateway_transaction_id' => 'gw_1',
+        'status' => PaymentStatus::Paid, 'amount' => 5000,
+        'currency' => Currency::IQD, 'correlation_id' => 'c',
+    ]);
+
+    registerStubDriver('evt_refund_full', PaymentStatus::Refunded, new DateTimeImmutable());
+    $this->postJson('/payments/webhooks/stub')->assertStatus(200);
+
+    $tx = PaymentTransaction::first();
+    expect($tx->status)->toBe(PaymentStatus::Refunded)
+        ->and((int) $tx->refunded_amount)->toBe(5000);
+});
+
+it('accumulates refunded_amount across partial refund webhooks', function () {
+    PaymentTransaction::create([
+        'gateway' => 'stub', 'reference' => 'ord_partial', 'gateway_transaction_id' => 'gw_p',
+        'status' => PaymentStatus::Paid, 'amount' => 10_000,
+        'currency' => Currency::IQD, 'correlation_id' => 'c',
+    ]);
+
+    // First partial: gateway reports 3000 refunded.
+    app('parakit.manager')->flushResolved();
+    app('parakit.manager')->extend('stub', function () {
+        return new class implements PaymentGateway {
+            public function charge($r): \Froshly\Parakit\DTOs\PaymentResponse { throw new RuntimeException('n/a'); }
+            public function handleWebhook(\Illuminate\Http\Request $r): WebhookPayload {
+                return new WebhookPayload(
+                    gateway: 'stub', gatewayTransactionId: 'gw_p', reference: 'ord_partial',
+                    status: PaymentStatus::PartiallyRefunded, amount: 3000, currency: Currency::IQD,
+                    eventId: 'evt_partial_1', occurredAt: new DateTimeImmutable(),
+                );
+            }
+            public function name(): string { return 'stub'; }
+        };
+    });
+    $this->postJson('/payments/webhooks/stub')->assertStatus(200);
+
+    expect((int) PaymentTransaction::first()->refunded_amount)->toBe(3000);
+
+    // Second partial: another 2000.
+    app('parakit.manager')->flushResolved();
+    app('parakit.manager')->extend('stub', function () {
+        return new class implements PaymentGateway {
+            public function charge($r): \Froshly\Parakit\DTOs\PaymentResponse { throw new RuntimeException('n/a'); }
+            public function handleWebhook(\Illuminate\Http\Request $r): WebhookPayload {
+                return new WebhookPayload(
+                    gateway: 'stub', gatewayTransactionId: 'gw_p', reference: 'ord_partial',
+                    status: PaymentStatus::PartiallyRefunded, amount: 2000, currency: Currency::IQD,
+                    eventId: 'evt_partial_2', occurredAt: new DateTimeImmutable(),
+                );
+            }
+            public function name(): string { return 'stub'; }
+        };
+    });
+    $this->postJson('/payments/webhooks/stub')->assertStatus(200);
+
+    expect((int) PaymentTransaction::first()->refunded_amount)->toBe(5000);
+});
+
+it('does not re-apply an already processed partial refund event', function () {
+    PaymentTransaction::create([
+        'gateway' => 'stub', 'reference' => 'ord_partial_once', 'gateway_transaction_id' => 'gw_once',
+        'status' => PaymentStatus::Paid, 'amount' => 10_000,
+        'currency' => Currency::IQD, 'correlation_id' => 'c',
+    ]);
+
+    $payload = new WebhookPayload(
+        gateway: 'stub',
+        gatewayTransactionId: 'gw_once',
+        reference: 'ord_partial_once',
+        status: PaymentStatus::PartiallyRefunded,
+        amount: 3000,
+        currency: Currency::IQD,
+        eventId: 'evt_partial_once',
+        occurredAt: new DateTimeImmutable(),
+    );
+
+    $event = PaymentWebhookEvent::create([
+        'gateway' => 'stub',
+        'event_id' => 'evt_partial_once',
+        'status' => PaymentStatus::PartiallyRefunded->value,
+        'payload' => [],
+    ]);
+
+    $processor = app(WebhookProcessor::class);
+    $processor->applyToTransaction($payload, $event);
+    $processor->applyToTransaction($payload, $event);
+
+    expect((int) PaymentTransaction::first()->refunded_amount)->toBe(3000)
+        ->and(PaymentWebhookEvent::first()->processed_at)->not->toBeNull();
 });
 
 it('rolls back the event row when applyToTransaction fails mid-flight (no orphaned dedupe rows)', function () {

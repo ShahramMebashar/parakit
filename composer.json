@@ -39,7 +39,7 @@
   },
   "scripts": {
     "test": "pest",
-    "stan": "phpstan analyse"
+    "stan": "phpstan analyse --memory-limit=1G"
   },
   "config": {
     "allow-plugins": { "pestphp/pest-plugin": true }

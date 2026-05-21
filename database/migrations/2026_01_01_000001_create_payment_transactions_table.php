@@ -17,7 +17,7 @@ return new class extends Migration {
             $t->unsignedBigInteger('amount');
             $t->string('currency', 3);
             $t->unsignedBigInteger('refunded_amount')->default(0);
-            $t->string('idempotency_key')->nullable()->unique();
+            $t->string('idempotency_key')->nullable();
             $t->string('correlation_id')->index();
             $t->json('metadata')->nullable();
             $t->json('last_raw_response')->nullable();
@@ -25,6 +25,8 @@ return new class extends Migration {
             $t->timestamp('paid_at')->nullable();
             $t->timestamps();
             $t->unique(['gateway', 'gateway_transaction_id']);
+            // Per-gateway uniqueness: the same caller key against two gateways is two payments.
+            $t->unique(['gateway', 'idempotency_key']);
         });
     }
 
