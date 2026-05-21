@@ -24,15 +24,6 @@ use Froshly\Parakit\Exceptions\InvalidWebhookSignatureException;
 final class QiCardSignatureVerifier
 {
     /**
-     * Cache parsed public keys by sha256 of their PEM so we never reparse on
-     * every webhook. Keyed by a string digest so concurrent rotations stay
-     * distinct.
-     *
-     * @var array<string, \OpenSSLAsymmetricKey>
-     */
-    private static array $keyCache = [];
-
-    /**
      * @param array<string, mixed> $payload The decoded webhook JSON body.
      */
     public static function verify(?string $signatureHeader, array $payload, string $publicKeyPem): void
@@ -46,10 +37,15 @@ final class QiCardSignatureVerifier
             throw new InvalidWebhookSignatureException('QiCard X-Signature is not valid base64');
         }
 
-        $data = self::canonicalString($payload);
-        $key = self::loadKey($publicKeyPem);
+        // Parse the PEM on every call — caching it would let a rotated key
+        // keep validating against the old key until the Octane worker recycles.
+        // openssl_pkey_get_public is microseconds; not worth the staleness risk.
+        $key = openssl_pkey_get_public($publicKeyPem);
+        if ($key === false) {
+            throw new InvalidWebhookSignatureException('QiCard public key is not a valid PEM');
+        }
 
-        $result = openssl_verify($data, $decoded, $key, OPENSSL_ALGO_SHA256);
+        $result = openssl_verify(self::canonicalString($payload), $decoded, $key, OPENSSL_ALGO_SHA256);
         if ($result !== 1) {
             throw new InvalidWebhookSignatureException('QiCard X-Signature did not verify');
         }
@@ -88,20 +84,5 @@ final class QiCardSignatureVerifier
         }
         $s = is_scalar($v) ? (string) $v : '';
         return $s === '' ? '-' : $s;
-    }
-
-    private static function loadKey(string $pem): \OpenSSLAsymmetricKey
-    {
-        $hash = hash('sha256', $pem);
-        if (isset(self::$keyCache[$hash])) {
-            return self::$keyCache[$hash];
-        }
-
-        $key = openssl_pkey_get_public($pem);
-        if ($key === false) {
-            throw new InvalidWebhookSignatureException('QiCard public key is not a valid PEM');
-        }
-
-        return self::$keyCache[$hash] = $key;
     }
 }
