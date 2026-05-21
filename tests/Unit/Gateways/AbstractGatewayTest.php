@@ -257,3 +257,43 @@ it('opens the circuit after threshold failures and fails fast thereafter', funct
 
     expect($caught)->toBeTrue()->and($gw->calls)->toBe(2);
 });
+
+it('writes an audit-trail PaymentLog row on a successful charge', function () {
+    $gw = new DummyGateway('dummy', []);
+    $gw->charge(new PaymentRequest('ord_log_ok', 5000, Currency::IQD, 'd', idempotencyKey: 'k_log_ok'));
+
+    $row = \Froshly\Parakit\Models\PaymentLog::first();
+    expect($row)->not->toBeNull()
+        ->and($row->action)->toBe('charge')
+        ->and($row->gateway)->toBe('dummy')
+        ->and($row->error_message)->toBeNull()
+        ->and($row->request['reference'])->toBe('ord_log_ok')
+        ->and($row->response['success'])->toBeTrue();
+});
+
+it('writes an audit-trail PaymentLog row on a failed charge (carries the error message)', function () {
+    config()->set('parakit.reliability.retry.max_attempts', 1);
+
+    $gw = new class('dummy', []) extends \Froshly\Parakit\Gateways\AbstractGateway {
+        protected function performCharge(\Froshly\Parakit\DTOs\PaymentRequest $r): \Froshly\Parakit\DTOs\PaymentResponse {
+            throw new \Froshly\Parakit\Exceptions\GatewayUnavailableException('upstream down');
+        }
+        public function handleWebhook(\Illuminate\Http\Request $r): \Froshly\Parakit\DTOs\WebhookPayload { throw new RuntimeException('n/a'); }
+        public function name(): string { return 'dummy'; }
+    };
+
+    try { $gw->charge(new PaymentRequest('ord_log_fail', 5000, Currency::IQD, 'd', idempotencyKey: 'k_log_fail')); } catch (\Throwable) {}
+
+    $row = \Froshly\Parakit\Models\PaymentLog::first();
+    expect($row)->not->toBeNull()
+        ->and($row->error_message)->toBe('upstream down')
+        ->and($row->response)->toBe([]);
+});
+
+it('honours parakit.logging.enabled=false and writes no PaymentLog rows', function () {
+    config()->set('parakit.logging.enabled', false);
+    $gw = new DummyGateway('dummy', []);
+    $gw->charge(new PaymentRequest('ord_log_off', 5000, Currency::IQD, 'd', idempotencyKey: 'k_log_off'));
+
+    expect(\Froshly\Parakit\Models\PaymentLog::count())->toBe(0);
+});

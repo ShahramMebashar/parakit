@@ -19,6 +19,7 @@ use Froshly\Parakit\Models\PaymentTransaction;
 use Froshly\Parakit\Support\CircuitBreaker;
 use Froshly\Parakit\Support\CorrelationId;
 use Froshly\Parakit\Support\IdempotencyKey;
+use Froshly\Parakit\Support\PaymentLogger;
 
 abstract class AbstractGateway implements PaymentGateway
 {
@@ -37,6 +38,19 @@ abstract class AbstractGateway implements PaymentGateway
     }
 
     public function charge(PaymentRequest $request): PaymentResponse
+    {
+        $startMs = (int) (hrtime(true) / 1_000_000);
+        try {
+            $response = $this->chargeInner($request);
+            $this->logCharge($request, $response, null, $startMs);
+            return $response;
+        } catch (\Throwable $e) {
+            $this->logCharge($request, null, $e, $startMs);
+            throw $e;
+        }
+    }
+
+    private function chargeInner(PaymentRequest $request): PaymentResponse
     {
         if ($this->breaker->isOpen()) {
             throw new GatewayUnavailableException("Circuit open for {$this->gatewayName}");
@@ -198,5 +212,69 @@ abstract class AbstractGateway implements PaymentGateway
             correlationId: $tx->correlation_id,
             raw: $tx->last_raw_response ?? [],
         );
+    }
+
+    /**
+     * Persist an audit-trail row for the charge attempt. PaymentLogger
+     * respects parakit.logging.enabled and redacts credentials via the
+     * configured PayloadRedactor, so no extra gating is needed here.
+     */
+    private function logCharge(
+        PaymentRequest $request,
+        ?PaymentResponse $response,
+        ?\Throwable $error,
+        int $startMs,
+    ): void {
+        try {
+            app(PaymentLogger::class)->record(
+                action: 'charge',
+                gateway: $this->gatewayName,
+                endpoint: null,
+                statusCode: null,
+                durationMs: (int) (hrtime(true) / 1_000_000) - $startMs,
+                request: $this->requestToArray($request),
+                response: $response !== null ? $this->responseToArray($response) : [],
+                correlationId: $this->correlationId(),
+                errorMessage: $error?->getMessage(),
+            );
+        } catch (\Throwable) {
+            // Audit logging must never mask the real charge outcome — swallow.
+        }
+    }
+
+    /** @return array<string, mixed> */
+    private function requestToArray(PaymentRequest $r): array
+    {
+        return [
+            'reference'       => $r->reference,
+            'amount'          => $r->amount,
+            'currency'        => $r->currency->value,
+            'description'     => $r->description,
+            'customer_name'   => $r->customerName,
+            'customer_email'  => $r->customerEmail,
+            'customer_phone'  => $r->customerPhone,
+            'callback_url'    => $r->callbackUrl,
+            'return_url'      => $r->returnUrl,
+            'idempotency_key' => $r->idempotencyKey,
+            'metadata'        => $r->metadata,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function responseToArray(PaymentResponse $r): array
+    {
+        return [
+            'success'                => $r->success,
+            'gateway_transaction_id' => $r->gatewayTransactionId,
+            'status'                 => $r->status->value,
+            'amount'                 => $r->amount,
+            'currency'               => $r->currency->value,
+            'redirect_url'           => $r->redirectUrl,
+            'qr_code'                => $r->qrCode,
+            'deep_link'              => $r->deepLink,
+            'readable_code'          => $r->readableCode,
+            'expires_at'             => $r->expiresAt?->format(\DateTimeInterface::ATOM),
+            'raw'                    => $r->raw,
+        ];
     }
 }
