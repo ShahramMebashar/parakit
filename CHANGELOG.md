@@ -2,6 +2,21 @@
 
 All notable changes to `froshly/parakit` are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.9.1] — 2026-05-22
+
+### Added
+- `parakit:webhooks:replay` — re-applies webhook events that landed before the local charge transaction had committed (FIB's QR flow can finish in under a second). `WebhookProcessor` was already preserving those rows with `processed_at = null` for later replay; now there's a command that actually replays them. Defaults to events older than 5 minutes; configurable via `--older-than` and `--limit`.
+- `parakit:doctor` now warns when `qicard.public_key` is unset. The fallback (status re-check) mode still works but should be a deliberate choice; the warning surfaces it.
+
+### Changed
+- **`barryvdh/laravel-dompdf` is now an optional dependency.** Moved from `require` to `suggest`. Merchants who never generate PDF receipts no longer pull the full HTML-to-PDF engine. Apps that *do* use receipts must `composer require barryvdh/laravel-dompdf`; `PdfRenderer` now throws a helpful install hint when the binding is missing.
+- **Schema**: `payment_webhook_events` gains `gateway_transaction_id`, `reference`, `amount`, and `currency` nullable columns so the new replay command can reconstruct a payload without parsing per-gateway JSON shapes. Pre-0.9.1 rows lack those columns and are skipped by the replay command.
+
+### Fixed
+- **Nass Pay / Nass Wallet order-id derivation widened from `crc32` to `hexdec(substr(sha256_idempotency_key, 0, 15))`.** crc32 has a 2³² (~4 billion) collision space; at scale, two distinct references could collide and surface as a confusing "Order ID already exists" 409 from the gateway. The new derivation is ~1.15 × 10¹⁸, still numeric, still deterministic across retries.
+- **`FibClient`, `NassClient`, and `ZainCashClient` now `rawurlencode` the payment / order / transaction id before interpolating it into a URL path.** Defense in depth against path-segment injection — bounded today by the upstream gateway's 404/401, but a gap worth closing. `QiCardClient` already did this; the rest now match.
+- **QiCard webhook tests stop using a hard-coded `creationDate`.** The fixed timestamp went stale relative to the default 300s replay tolerance, causing the tests to silently rot weeks after landing.
+
 ## [0.9.0] — 2026-05-21
 
 ### Added
