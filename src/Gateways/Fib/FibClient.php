@@ -43,42 +43,45 @@ final class FibClient
             }
         }
 
-        $res = $this->send('POST', '/protected/v1/payments', $payload);
-        if (!$res->successful()) {
-            throw new GatewayUnavailableException("FIB charge failed: HTTP {$res->status()}");
-        }
-        $json = $res->json();
-        return is_array($json) ? $json : [];
+        return $this->parse('charge', '/protected/v1/payments', $this->send('POST', '/protected/v1/payments', $payload));
     }
 
     /** @return array<string, mixed> */
     public function fetchStatus(string $paymentId): array
     {
-        $res = $this->send('GET', "/protected/v1/payments/{$paymentId}/status");
-        if (!$res->successful()) {
-            throw new GatewayUnavailableException("FIB status failed: HTTP {$res->status()}");
-        }
-        $json = $res->json();
-        return is_array($json) ? $json : [];
+        $uri = "/protected/v1/payments/{$paymentId}/status";
+        return $this->parse('status', $uri, $this->send('GET', $uri));
     }
 
     /** @return array<string, mixed> */
     public function refund(string $paymentId): array
     {
-        $res = $this->send('POST', "/protected/v1/payments/{$paymentId}/refund");
-        if (!$res->successful()) {
-            throw new GatewayUnavailableException("FIB refund failed: HTTP {$res->status()}");
-        }
-        $json = $res->json();
-        return is_array($json) ? $json : [];
+        $uri = "/protected/v1/payments/{$paymentId}/refund";
+        return $this->parse('refund', $uri, $this->send('POST', $uri));
     }
 
     /** @return array<string, mixed> */
     public function cancel(string $paymentId): array
     {
-        $res = $this->send('POST', "/protected/v1/payments/{$paymentId}/cancel");
-        if (!$res->successful()) {
-            throw new GatewayUnavailableException("FIB cancel failed: HTTP {$res->status()}");
+        $uri = "/protected/v1/payments/{$paymentId}/cancel";
+        return $this->parse('cancel', $uri, $this->send('POST', $uri));
+    }
+
+    /**
+     * Discriminate retryable 5xx from deterministic 4xx. 4xx is a config /
+     * state problem (bad credentials, already paid, expired); retrying it
+     * just burns circuit-breaker ticks against an outage parakit doesn't have.
+     *
+     * @return array<string, mixed>
+     */
+    private function parse(string $op, string $uri, Response $res): array
+    {
+        $status = $res->status();
+        if ($status >= 500) {
+            throw new GatewayUnavailableException("FIB {$op} failed: HTTP {$status}");
+        }
+        if ($status >= 400) {
+            throw new FibApiException("FIB {$op} rejected: HTTP {$status}", $status);
         }
         $json = $res->json();
         return is_array($json) ? $json : [];

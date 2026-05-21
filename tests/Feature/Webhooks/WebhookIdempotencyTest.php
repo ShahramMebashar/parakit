@@ -108,3 +108,25 @@ it('skips illegal transitions silently (logs, returns 200) without re-firing eve
     expect(PaymentTransaction::first()->status)->toBe(PaymentStatus::Refunded);
     Event::assertNotDispatched(PaymentSucceeded::class);
 });
+
+it('rolls back the event row when applyToTransaction fails mid-flight (no orphaned dedupe rows)', function () {
+    // Simulate a listener crash: a PaymentSucceeded listener throws.
+    // The event row insert and the tx update must both roll back so the
+    // gateway's retry is processed afresh rather than dedupe-200'd.
+    \Illuminate\Support\Facades\Event::listen(PaymentSucceeded::class, function () {
+        throw new RuntimeException('listener exploded');
+    });
+
+    PaymentTransaction::create([
+        'gateway' => 'stub', 'reference' => 'ord_1',
+        'gateway_transaction_id' => 'gw_1',
+        'status' => PaymentStatus::Pending, 'amount' => 5000,
+        'currency' => Currency::IQD, 'correlation_id' => 'c',
+    ]);
+
+    registerStubDriver('evt_atomic', PaymentStatus::Paid, new DateTimeImmutable());
+    $this->postJson('/payments/webhooks/stub')->assertStatus(500);
+
+    expect(PaymentWebhookEvent::count())->toBe(0)
+        ->and(PaymentTransaction::first()->status)->toBe(PaymentStatus::Pending);
+});

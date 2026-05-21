@@ -5,9 +5,9 @@ title: Introduction
 # Introduction
 
 Parakit is a Laravel-native payment kit for Iraq and Kurdistan. It puts the
-local gateways — FIB, ZainCash, Nass Pay, Nass Wallet, and FastPay — behind one
-fluent API, so charging a customer looks the same no matter which gateway you
-pick.
+local gateways — FIB, ZainCash, Nass Pay, Nass Wallet, FastPay, and QiCard —
+behind one fluent API, so charging a customer looks the same no matter which
+gateway you pick.
 
 If you have used Laravel before, Parakit will feel familiar: a facade, a fluent
 builder, config in `config/parakit.php`, events you can listen for. The goal is
@@ -29,19 +29,21 @@ $response = Payment::for($order)
 That returns a `PaymentResponse` — a redirect URL, or a QR code and deep link,
 depending on the gateway. The rest of the docs build on this one call.
 
-## The five gateways
+## The six gateways
 
-| Gateway          | Driver key   | Flow                                | Refunds |
-| ---------------- | ------------ | ----------------------------------- | ------- |
-| First Iraqi Bank | `fib`        | QR code + readable code + deep link | Yes     |
-| ZainCash         | `zaincash`   | Hosted redirect                     | Yes     |
-| Nass Pay         | `nass`       | Hosted redirect                     | No      |
-| Nass Wallet      | `nasswallet` | Hosted redirect                     | No      |
-| FastPay          | `fastpay`    | Hosted redirect                     | Yes     |
+| Gateway          | Driver key   | Flow                                | Refunds | Cancel |
+| ---------------- | ------------ | ----------------------------------- | ------- | ------ |
+| First Iraqi Bank | `fib`        | QR code + readable code + deep link | Yes     | Yes    |
+| ZainCash         | `zaincash`   | Hosted redirect                     | Yes     | No     |
+| Nass Pay         | `nass`       | Hosted redirect                     | No      | No     |
+| Nass Wallet      | `nasswallet` | Hosted redirect                     | No      | No     |
+| FastPay          | `fastpay`    | Hosted redirect                     | Yes     | No     |
+| QiCard           | `qicard`     | Hosted card form (3DS)              | Yes     | Yes    |
 
 The driver key is what you pass to `->driver()` and what appears in the webhook
-URL (`POST /payments/webhooks/{gateway}`). FIB, ZainCash, and FastPay support
-refunds; Nass Pay and Nass Wallet do not — calling `refund()` on those throws.
+URL (`POST /payments/webhooks/{gateway}`). FIB, ZainCash, FastPay, and QiCard
+support refunds; Nass Pay and Nass Wallet do not — calling `refund()` on those
+throws. FIB and QiCard additionally support `cancel()` for an unpaid payment.
 
 ::: tip
 You only configure the gateways you use. Most apps start with one.
@@ -81,7 +83,7 @@ handled for you:
   circuit breaker fit together.
 - Per-gateway setup: [FIB](/gateways/fib), [ZainCash](/gateways/zaincash),
   [Nass Pay](/gateways/nass), [Nass Wallet](/gateways/nasswallet),
-  [FastPay](/gateways/fastpay).
+  [FastPay](/gateways/fastpay), [QiCard](/gateways/qicard).
 - [Multi-tenant merchants](/guides/multi-tenant-merchants),
   [Writing a custom gateway](/guides/custom-gateway), and
   [Testing & sandbox](/guides/testing-and-sandbox).

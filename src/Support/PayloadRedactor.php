@@ -13,24 +13,50 @@ final class PayloadRedactor
 
     public function redact(array $payload): array
     {
-        $lowerKeys = array_map('strtolower', $this->keys);
-        return $this->walk($payload, $lowerKeys);
+        $tokens = array_map('strtolower', $this->keys);
+        return $this->walk($payload, $tokens);
     }
 
-    private function walk(array $node, array $lowerKeys): array
+    /** @param string[] $tokens */
+    private function walk(array $node, array $tokens): array
     {
         foreach ($node as $k => $v) {
-            if (is_string($k) && in_array(strtolower($k), $lowerKeys, true)) {
+            if (is_string($k) && $this->isSensitiveKey($k, $tokens)) {
                 $node[$k] = self::REPLACEMENT;
                 continue;
             }
             if (is_array($v)) {
-                $node[$k] = $this->walk($v, $lowerKeys);
+                $node[$k] = $this->walk($v, $tokens);
             } elseif (is_string($v)) {
                 $node[$k] = $this->redactPanCandidates($v);
             }
         }
         return $node;
+    }
+
+    /**
+     * A key is sensitive if any configured token equals one of its word
+     * components — splitting on `_`, `-`, `/`, whitespace, and camelCase
+     * boundaries. So `'secret'` redacts `client_secret` and `apiSecret`
+     * without sweeping up `'secretary'`; `'key'` redacts `api_key` and
+     * `publicKey` without sweeping up `'keyboard'`.
+     *
+     * @param string[] $tokens
+     */
+    private function isSensitiveKey(string $key, array $tokens): bool
+    {
+        $lower = strtolower($key);
+        if (in_array($lower, $tokens, true)) {
+            return true;
+        }
+        $parts = preg_split('/[_\-\s\/]+|(?<=[a-z])(?=[A-Z])/', $key) ?: [];
+        $parts = array_map('strtolower', $parts);
+        foreach ($tokens as $tok) {
+            if (in_array($tok, $parts, true)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function redactPanCandidates(string $value): string

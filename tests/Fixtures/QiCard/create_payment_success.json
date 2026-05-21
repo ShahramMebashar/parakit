@@ -1,0 +1,11 @@
+{
+  "requestId": "4256ab83-de74-450f-b442-8fb995458243",
+  "paymentId": "f2bb43a8-488a-4281-977b-5b3418fc3c67",
+  "status": "CREATED",
+  "canceled": false,
+  "amount": 5000,
+  "currency": "IQD",
+  "creationDate": "2026-05-21T10:00:00Z",
+  "formUrl": "https://uat-sandbox-3ds-api.qi.iq/api/v1/payment/f2bb43a8-488a-4281-977b-5b3418fc3c67",
+  "additionalInfo": {}
+}

@@ -25,8 +25,32 @@ final class WebhookProcessor
         return (new DateTimeImmutable())->getTimestamp() - $payload->occurredAt->getTimestamp() > $toleranceSeconds;
     }
 
+    /**
+     * Record-and-apply in one DB transaction. Either both the event row and
+     * the transaction update commit, or neither does. A worker death between
+     * the two used to leave an event row with processed_at=null that the
+     * gateway's retry would then dedupe-200 without ever applying — atomic
+     * commit closes that gap.
+     *
+     * @throws DuplicateWebhookException
+     */
+    public function process(WebhookPayload $payload): PaymentWebhookEvent
+    {
+        return DB::transaction(function () use ($payload) {
+            $eventRow = $this->insertEvent($payload);
+            $this->applyToTransaction($payload, $eventRow);
+            return $eventRow;
+        });
+    }
+
     /** @throws DuplicateWebhookException */
     public function recordEvent(WebhookPayload $payload): PaymentWebhookEvent
+    {
+        return $this->insertEvent($payload);
+    }
+
+    /** @throws DuplicateWebhookException */
+    private function insertEvent(WebhookPayload $payload): PaymentWebhookEvent
     {
         try {
             return PaymentWebhookEvent::create([
@@ -130,14 +154,17 @@ final class WebhookProcessor
     }
 
     /**
-     * True when a Paid webhook carries a non-zero amount that disagrees with
-     * the stored charge. Restricted to Paid: a Refunded/PartiallyRefunded
-     * webhook legitimately carries the refund amount, not the charge amount.
+     * True when a Paid webhook's amount disagrees with the stored charge.
+     * Restricted to Paid because Refunded/PartiallyRefunded webhooks
+     * legitimately carry the refund amount, not the charge amount.
+     *
+     * Amount 0 is treated as a mismatch (not a free pass): a buggy gateway
+     * response of `Paid, amount: 0` would otherwise silently settle the row
+     * for the original charged amount.
      */
     private function isAmountMismatch(WebhookPayload $p, PaymentTransaction $tx): bool
     {
         return $p->status === PaymentStatus::Paid
-            && $p->amount !== 0
             && $p->amount !== (int) $tx->amount;
     }
 

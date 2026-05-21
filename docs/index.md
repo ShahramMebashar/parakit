@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Parakit
   text: Payments for Kurdistan & Iraq
-  tagline: پارەکیت — a Laravel-native payment kit. FIB, ZainCash, Nass Pay, Nass Wallet & FastPay, with idempotent webhooks, retries, and localised UIs out of the box.
+  tagline: پارەکیت — a Laravel-native payment kit. FIB, ZainCash, Nass Pay, Nass Wallet, FastPay & QiCard, with idempotent webhooks, retries, and localised UIs out of the box.
   actions:
     - theme: brand
       text: Get started
@@ -29,13 +29,14 @@ features:
 
 ## Supported gateways
 
-| Gateway          | Driver key   | Flow                                | Refunds |
-| ---------------- | ------------ | ----------------------------------- | ------- |
-| First Iraqi Bank | `fib`        | QR code + readable code + deep link | Yes     |
-| ZainCash         | `zaincash`   | Hosted redirect                     | Yes     |
-| Nass Pay         | `nass`       | Hosted redirect                     | No      |
-| Nass Wallet      | `nasswallet` | Hosted redirect                     | No      |
-| FastPay          | `fastpay`    | Hosted redirect                     | Yes     |
+| Gateway          | Driver key   | Flow                                | Refunds | Cancel | Signed webhooks |
+| ---------------- | ------------ | ----------------------------------- | ------- | ------ | --------------- |
+| First Iraqi Bank | `fib`        | QR code + readable code + deep link | Yes     | Yes    | Re-fetch        |
+| ZainCash         | `zaincash`   | Hosted redirect                     | Yes     | No     | JWT (HS256)     |
+| Nass Pay         | `nass`       | Hosted redirect                     | No      | No     | Re-fetch        |
+| Nass Wallet      | `nasswallet` | Hosted redirect                     | No      | No     | Re-fetch        |
+| FastPay          | `fastpay`    | Hosted redirect                     | Yes     | No     | Re-fetch        |
+| QiCard           | `qicard`     | Hosted card form (3DS)              | Yes     | Yes    | RSA-2048 SHA256 |
 
 Each gateway has its own page with credentials, payment flow, and webhook setup —
 start with [FIB](/gateways/fib). Need one that isn't here? Implement the

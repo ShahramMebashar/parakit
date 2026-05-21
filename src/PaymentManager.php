@@ -11,6 +11,7 @@ use Froshly\Parakit\Gateways\FastPay\FastPayGateway;
 use Froshly\Parakit\Gateways\Fib\FibGateway;
 use Froshly\Parakit\Gateways\Nass\NassGateway;
 use Froshly\Parakit\Gateways\NassWallet\NassWalletGateway;
+use Froshly\Parakit\Gateways\QiCard\QiCardGateway;
 use Froshly\Parakit\Gateways\ZainCash\ZainCashGateway;
 
 class PaymentManager
@@ -36,7 +37,7 @@ class PaymentManager
     {
         $name ??= (string) config('parakit.default');
 
-        // Memo: same gateway name reuses the same instance. Flushed by
+        // Same gateway name reuses the same instance. Flushed by
         // flushResolved() between Octane requests so tenants never share a
         // stale instance across requests.
         if (isset($this->resolved[$name])) {
@@ -113,6 +114,11 @@ class PaymentManager
     protected function createFastpayDriver(array $cfg, string $name): PaymentGateway
     {
         return new FastPayGateway($name, $cfg);
+    }
+
+    protected function createQicardDriver(array $cfg, string $name): PaymentGateway
+    {
+        return new QiCardGateway($name, $cfg);
     }
 
     /** @param array<string,mixed> $cfg */

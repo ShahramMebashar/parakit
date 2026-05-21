@@ -10,4 +10,5 @@ enum Gateway: string
     case FastPay    = 'fastpay';
     case NassPay    = 'nasspay';
     case NassWallet = 'nasswallet';
+    case QiCard     = 'qicard';
 }

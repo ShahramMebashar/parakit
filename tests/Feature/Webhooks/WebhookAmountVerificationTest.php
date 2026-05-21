@@ -54,12 +54,25 @@ it('applies the transition when the webhook amount matches the transaction', fun
     expect(PaymentTransaction::first()->status)->toBe(PaymentStatus::Paid);
 });
 
-it('does not flag a mismatch when the webhook reports amount 0 (not reported)', function () {
+it('flags a Paid webhook with amount 0 as a mismatch (closes the buggy-gateway silent-Paid path)', function () {
+    config()->set('parakit.webhooks.on_amount_mismatch', 'reject');
     seedPendingStubTx(5000);
     registerAmountStub(0);
 
     $this->postJson('/payments/webhooks/stub')->assertStatus(200);
 
+    expect(PaymentTransaction::first()->status)->toBe(PaymentStatus::Pending);
+});
+
+it('still applies an amount-0 transition in the default log mode (operators see the warning)', function () {
+    seedPendingStubTx(5000);
+    registerAmountStub(0);
+
+    $this->postJson('/payments/webhooks/stub')->assertStatus(200);
+
+    // In 'log' mode the transition is applied so we do not silently strand
+    // a paid order; the mismatch is recorded as parakit.webhook.amount_mismatch
+    // so it shows up in operator dashboards.
     expect(PaymentTransaction::first()->status)->toBe(PaymentStatus::Paid);
 });
 

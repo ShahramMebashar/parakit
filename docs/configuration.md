@@ -147,7 +147,7 @@ replacement font covers those scripts.
 A map of **named gateway configs**. The array key is the name you pass to
 `->driver()` and the name that appears in the webhook URL. The `driver` key
 inside each entry selects the implementation (`fib`, `zaincash`, `nass`,
-`nasswallet`, `fastpay`).
+`nasswallet`, `fastpay`, `qicard`).
 
 ```php
 'gateways' => [
@@ -164,7 +164,7 @@ configs for the same driver — `fib_main`, `fib_branch`, each with its own
 credentials, circuit-breaker state, and webhook route. See
 [Multi-tenant merchants](/guides/multi-tenant-merchants) for that pattern.
 
-The bundled config defines all five gateways. Each one has its own set of
+The bundled config defines all six gateways. Each one has its own set of
 credential keys and env vars — see the per-gateway page for the full table and
 where to obtain the values:
 
@@ -178,6 +178,9 @@ where to obtain the values:
   `basic_token`, `username`, `password`, `transaction_pin`, `callback_url`.
 - [FastPay](/gateways/fastpay) — `base_url`, `store_id`, `store_password`,
   `refund_secret_key`, `success_url`, `cancel_url`, `callback_url`.
+- [QiCard](/gateways/qicard) — `base_url`, `username`, `password`,
+  `terminal_id`, `locale`, `public_key`, `finish_payment_url`,
+  `notification_url`.
 
 ::: tip
 The default `base_url` for every gateway points at its staging/UAT host. Set

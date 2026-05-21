@@ -1,0 +1,20 @@
+{
+  "requestId": "4256ab83-de74-450f-b442-8fb995458243",
+  "paymentId": "f2bb43a8-488a-4281-977b-5b3418fc3c67",
+  "status": "SUCCESS",
+  "canceled": false,
+  "amount": 5000,
+  "confirmedAmount": 5000,
+  "currency": "IQD",
+  "paymentType": "CARD",
+  "creationDate": "2026-05-21T10:00:00Z",
+  "details": {
+    "resultCode": "00",
+    "rrn": "505700009817",
+    "authId": "123456",
+    "authDate": "2026-05-21T10:01:00Z",
+    "maskedPan": "521372******8582",
+    "paymentSystem": "MASTER_CARD"
+  },
+  "additionalInfo": {}
+}

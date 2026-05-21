@@ -4,7 +4,7 @@ title: Nass Pay
 
 # Nass Pay
 
-Nass Pay is a hosted-checkout gateway: you create a transaction server-side, then send the customer to a Nass-hosted page to pay. `charge()` returns a `redirectUrl` and nothing else.
+[Nass Pay](https://nass.iq) is a hosted-checkout gateway: you create a transaction server-side, then send the customer to a Nass-hosted page to pay. `charge()` returns a `redirectUrl` and nothing else.
 
 ## Credentials
 

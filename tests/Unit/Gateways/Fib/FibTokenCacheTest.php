@@ -61,3 +61,9 @@ it('throws GatewayUnavailable on token endpoint 5xx', function () {
     $cache = new FibTokenCache('https://fib.stage.fib.iq', 'cid', 'csecret');
     $cache->token();
 })->throws(\Froshly\Parakit\Exceptions\GatewayUnavailableException::class);
+
+it('throws a non-retryable FibApiException on token endpoint 4xx (bad credentials)', function () {
+    Http::fake(['*/protocol/openid-connect/token' => Http::response(['error' => 'invalid_client'], 401)]);
+    $cache = new FibTokenCache('https://fib.stage.fib.iq', 'cid', 'csecret');
+    $cache->token();
+})->throws(\Froshly\Parakit\Gateways\Fib\FibApiException::class);

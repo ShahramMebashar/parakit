@@ -5,7 +5,7 @@
 [![CI](https://github.com/ShahramMebashar/parakit/actions/workflows/ci.yml/badge.svg)](https://github.com/ShahramMebashar/parakit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Take payments from Iraqi and Kurdish customers in a Laravel app — **FIB**, **ZainCash**, **Nass Pay**, **Nass Wallet**, **FastPay** — with idempotent webhooks, retry & circuit-breaker, redacted logging, a sweeper for lost webhooks, and three localised UIs (en/ar/ckb) out of the box.
+Take payments from Iraqi and Kurdish customers in a Laravel app — **FIB**, **ZainCash**, **Nass Pay**, **Nass Wallet**, **FastPay**, **QiCard** — with idempotent webhooks, retry & circuit-breaker, redacted logging, a sweeper for lost webhooks, and three localised UIs (en/ar/ckb) out of the box.
 
 `composer require` → first sandbox charge in under 15 minutes. That's the goal.
 
@@ -72,6 +72,14 @@ FASTPAY_REFUND_SECRET_KEY=your-refund-secret-key
 FASTPAY_SUCCESS_URL=https://yourapp.com/payments/fastpay/return
 FASTPAY_CANCEL_URL=https://yourapp.com/payments/fastpay/cancel
 FASTPAY_CALLBACK_URL=https://yourapp.com/payments/webhooks/fastpay
+
+QICARD_BASE_URL=https://uat-sandbox-3ds-api.qi.iq
+QICARD_USERNAME=your-qicard-username
+QICARD_PASSWORD=your-qicard-password
+QICARD_TERMINAL_ID=your-terminal-id
+QICARD_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
+QICARD_FINISH_PAYMENT_URL=https://yourapp.com/payments/qicard/finish
+QICARD_NOTIFICATION_URL=https://yourapp.com/payments/webhooks/qicard
 ```
 
 Verify everything is wired:
