@@ -58,7 +58,7 @@ it('accepts a valid X-Signature and transitions the transaction to Paid', functi
         'status'       => 'SUCCESS',
         'amount'       => 5000,
         'currency'     => 'IQD',
-        'creationDate' => '2026-05-21T10:00:00',
+        'creationDate' => gmdate('Y-m-d\TH:i:s'),
     ];
 
     $this->postJson(
@@ -76,7 +76,7 @@ it('rejects a tampered payload as 401', function () {
         'status'       => 'SUCCESS',
         'amount'       => 5000,
         'currency'     => 'IQD',
-        'creationDate' => '2026-05-21T10:00:00',
+        'creationDate' => gmdate('Y-m-d\TH:i:s'),
     ];
     $sig = signQiCardPayload($payload, $this->qicardPrivateKey);
 
@@ -95,18 +95,24 @@ it('rejects a webhook with no X-Signature when a public key is configured', func
         'status'       => 'SUCCESS',
         'amount'       => 5000,
         'currency'     => 'IQD',
-        'creationDate' => '2026-05-21T10:00:00',
+        'creationDate' => gmdate('Y-m-d\TH:i:s'),
     ])->assertStatus(401);
 });
 
 it('falls back to a server-to-server status re-check when no public key is configured', function () {
     config()->set('parakit.gateways.qicard.public_key', null);
 
+    // Inline the status response so creationDate stays inside the replay
+    // tolerance even months from now — using a fixture with a fixed date
+    // would silently rot.
     Http::fake([
-        '*/api/v1/payment/*/status' => Http::response(
-            json_decode(file_get_contents(__DIR__ . '/../../../Fixtures/QiCard/status_success.json'), true),
-            200,
-        ),
+        '*/api/v1/payment/*/status' => Http::response([
+            'paymentId'    => 'f2bb43a8-488a-4281-977b-5b3418fc3c67',
+            'status'       => 'SUCCESS',
+            'amount'       => 5000,
+            'currency'     => 'IQD',
+            'creationDate' => gmdate('Y-m-d\TH:i:s'),
+        ], 200),
     ]);
 
     $this->postJson('/payments/webhooks/qicard', [
