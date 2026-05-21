@@ -56,6 +56,15 @@ class DoctorCommand extends Command
                 }
             }
 
+            if ($driverType === 'qicard' && empty($cfg['public_key'])) {
+                // Running QiCard without the public key means we cannot prove
+                // webhook authenticity from the body alone — parakit falls
+                // back to a server-to-server status re-check on every
+                // notification. Acceptable in dev; almost never what you want
+                // in production. Surface it so it's a deliberate choice.
+                $this->warn("  - QiCard public_key not set: webhooks will be verified by status re-check, not RSA signature.");
+            }
+
             if ($driverType === 'fib' && !empty($cfg['client_id']) && !empty($cfg['client_secret'])) {
                 // Force a fresh fetch — a cached token from a rotated secret
                 // would otherwise mask the credential rotation and let the
