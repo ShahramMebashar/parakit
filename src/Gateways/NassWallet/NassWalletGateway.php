@@ -50,16 +50,19 @@ final class NassWalletGateway extends AbstractGateway implements SupportsStatusC
             );
         }
 
-        // Derive a numeric orderId from the stable idempotency key. crc32 is
-        // deterministic, so a retried performCharge re-sends the SAME orderId
-        // and never creates a duplicate NassWallet transaction.
+        // Derive a numeric orderId from the stable idempotency key. Stable
+        // across retries, so a retried performCharge re-sends the SAME orderId
+        // and NassWallet recognises the duplicate instead of creating two
+        // transactions. 15 hex chars of sha256 = 60 bits (~1.15e18); crc32
+        // (the previous derivation) was only 2^32 — collisions at scale
+        // surface as confusing "Order ID already exists" responses.
         $idemKey = $request->idempotencyKey ?? IdempotencyKey::derive(
             $this->name(),
             $request->reference,
             $request->amount,
             $request->currency->value,
         );
-        $orderId = (string) crc32($idemKey);
+        $orderId = (string) hexdec(substr($idemKey, 0, 15));
 
         $raw = $this->client->initTransaction([
             'userIdentifier' => (string) ($this->config['username'] ?? ''),

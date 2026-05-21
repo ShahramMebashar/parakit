@@ -40,16 +40,20 @@ final class NassGateway extends AbstractGateway implements SupportsStatusCheck
     protected function performCharge(PaymentRequest $request): PaymentResponse
     {
         // Recompute the same stable idempotency key AbstractGateway uses, then
-        // derive a numeric NassPay orderId from it. crc32 is deterministic, so
-        // a retried performCharge re-sends the SAME orderId and never creates a
-        // duplicate NassPay transaction.
+        // derive a numeric NassPay orderId from it. Stable across retries, so
+        // a retried performCharge re-sends the SAME orderId and NassPay
+        // recognises the duplicate instead of creating two transactions.
+        //
+        // 15 hex chars of the sha256 = 60 bits (~1.15e18). crc32 (the previous
+        // derivation) was only 2^32 — at scale, collisions surface as confusing
+        // "Order ID already exists" 409s from NassPay.
         $idemKey = $request->idempotencyKey ?? IdempotencyKey::derive(
             $this->name(),
             $request->reference,
             $request->amount,
             $request->currency->value,
         );
-        $orderId = (string) crc32($idemKey);
+        $orderId = (string) hexdec(substr($idemKey, 0, 15));
 
         $payload = [
             'orderId' => $orderId,
