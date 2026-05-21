@@ -37,6 +37,7 @@ class DoctorCommand extends Command
             $required = match ($driverType) {
                 'fib'      => ['base_url', 'client_id', 'client_secret', 'callback_url'],
                 'zaincash' => ['base_url', 'client_id', 'client_secret', 'api_key'],
+                'qicard'   => ['base_url', 'username', 'password', 'terminal_id'],
                 default    => null,
             };
 

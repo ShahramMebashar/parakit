@@ -14,7 +14,8 @@ class SimulateWebhookCommand extends Command
         {gateway}
         {--status=paid}
         {--reference=}
-        {--transaction-id=}';
+        {--transaction-id=}
+        {--sign-with=}';
 
     protected $description = 'Post a test webhook to your local app';
 
@@ -67,6 +68,17 @@ class SimulateWebhookCommand extends Command
                 'order_id' => $txnId,
                 'status' => $this->titleStatus($status),
             ],
+            // QiCard signs a flat JSON body. parakit verifies the X-Signature
+            // header against the configured public key, or falls back to a
+            // server-to-server status re-check if no key is set.
+            'qicard' => [
+                'paymentId'    => $txnId,
+                'requestId'    => $reference !== '' ? $reference : (string) Str::uuid(),
+                'status'       => strtoupper($status) === 'PAID' ? 'SUCCESS' : strtoupper($status),
+                'amount'       => 5000,
+                'currency'     => 'IQD',
+                'creationDate' => gmdate('Y-m-d\TH:i:s'),
+            ],
             default => [],
         };
 
@@ -74,9 +86,30 @@ class SimulateWebhookCommand extends Command
         $suffix = $gw === 'nasswallet' ? '/callback' : '';
         $url = url("/{$path}/{$gw}{$suffix}");
 
-        // NassWallet expects a JSON body (nested envelope); the others post a
-        // flat form, matching how each real gateway delivers its callback.
-        $client = $gw === 'nasswallet' ? Http::asJson() : Http::asForm();
+        // NassWallet and QiCard expect a JSON body; the others post a flat
+        // form, matching how each real gateway delivers its callback.
+        $client = in_array($gw, ['nasswallet', 'qicard'], true) ? Http::asJson() : Http::asForm();
+
+        // QiCard signs the canonical webhook string with the merchant's
+        // RSA-2048 private key. When --sign-with is supplied we mimic that
+        // here so the receiving app can exercise its verification path
+        // end-to-end without a live gateway.
+        $signWith = (string) $this->option('sign-with');
+        if ($gw === 'qicard' && $signWith !== '') {
+            $canonical = \Froshly\Parakit\Gateways\QiCard\QiCardSignatureVerifier::canonicalString($body);
+            $pkey = @file_get_contents($signWith);
+            if ($pkey === false) {
+                $this->error("Could not read private key from {$signWith}");
+                return self::FAILURE;
+            }
+            $sig = '';
+            if (!openssl_sign($canonical, $sig, $pkey, OPENSSL_ALGO_SHA256)) {
+                $this->error('openssl_sign failed; check the key format');
+                return self::FAILURE;
+            }
+            $client = $client->withHeaders(['X-Signature' => base64_encode($sig)]);
+        }
+
         $resp = $client->post($url, $body);
         $this->line("HTTP {$resp->status()}: {$resp->body()}");
 

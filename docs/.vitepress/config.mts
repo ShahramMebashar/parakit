@@ -60,6 +60,7 @@ export default defineConfig({
           { text: 'Nass Pay', link: '/gateways/nass' },
           { text: 'Nass Wallet', link: '/gateways/nasswallet' },
           { text: 'FastPay', link: '/gateways/fastpay' },
+          { text: 'QiCard', link: '/gateways/qicard' },
         ],
       },
       {

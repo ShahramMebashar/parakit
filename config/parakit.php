@@ -134,5 +134,21 @@ return [
             'cancel_url'        => env('FASTPAY_CANCEL_URL'),
             'callback_url'      => env('FASTPAY_CALLBACK_URL'),
         ],
+        'qicard' => [
+            'driver'             => 'qicard',
+            'base_url'           => env('QICARD_BASE_URL', 'https://uat-sandbox-3ds-api.qi.iq'),
+            'username'           => env('QICARD_USERNAME'),
+            'password'           => env('QICARD_PASSWORD'),
+            'terminal_id'        => env('QICARD_TERMINAL_ID'),
+            'locale'             => env('QICARD_LOCALE', 'en_US'),
+            // RSA-2048 public key (PEM) used to verify webhook X-Signature
+            // headers. When unset, parakit cannot prove webhook authenticity
+            // from the body alone — it falls back to a server-to-server
+            // status re-check and logs `parakit.qicard.webhook.unverified`.
+            // Obtain the key from QiCard support.
+            'public_key'         => env('QICARD_PUBLIC_KEY'),
+            'finish_payment_url' => env('QICARD_FINISH_PAYMENT_URL'),
+            'notification_url'   => env('QICARD_NOTIFICATION_URL'),
+        ],
     ],
 ];

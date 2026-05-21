@@ -1,0 +1,19 @@
+{
+  "requestId": "4256ab83-de74-450f-b442-8fb995458243",
+  "paymentId": "f2bb43a8-488a-4281-977b-5b3418fc3c67",
+  "status": "CREATED",
+  "canceled": true,
+  "amount": 5000,
+  "currency": "IQD",
+  "creationDate": "2026-05-21T10:00:00Z",
+  "cancels": [
+    {
+      "requestId": "20260521-100100-001",
+      "created": "2026-05-21T10:01:00Z",
+      "successfully": true,
+      "amount": 5000
+    }
+  ],
+  "withoutAuthenticate": false,
+  "additionalInfo": {}
+}
