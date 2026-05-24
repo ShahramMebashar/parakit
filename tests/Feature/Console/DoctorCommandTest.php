@@ -15,6 +15,28 @@ beforeEach(function () {
     ]);
 });
 
+it('warns when on_amount_mismatch is set to an invalid policy', function () {
+    Http::fake([
+        '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 600]),
+    ]);
+    config()->set('parakit.webhooks.on_amount_mismatch', 'rejcet');
+
+    $this->artisan('parakit:doctor --gateway=fib')
+        ->expectsOutputToContain('on_amount_mismatch')
+        ->assertSuccessful();
+});
+
+it('does not warn when on_amount_mismatch is a valid policy', function () {
+    Http::fake([
+        '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 600]),
+    ]);
+    config()->set('parakit.webhooks.on_amount_mismatch', 'reject');
+
+    $this->artisan('parakit:doctor --gateway=fib')
+        ->doesntExpectOutputToContain('on_amount_mismatch')
+        ->assertSuccessful();
+});
+
 it('reports OK when all checks pass', function () {
     Http::fake([
         '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 600]),

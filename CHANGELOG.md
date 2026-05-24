@@ -4,7 +4,13 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 
 ## [Unreleased]
 
-Pre-1.0 public-API cleanup — locking names before the v1.0 freeze. **Breaking** (acceptable under the documented "v0.x API may shift" policy).
+Pre-1.0 public-API cleanup — locking names before the v1.0 freeze, plus non-breaking additions. The renames/removals are **breaking** (acceptable under the documented "v0.x API may shift" policy); the additions below are backward-compatible.
+
+### Added
+- **`$gateway` on every payment lifecycle event.** `PaymentSucceeded`, `PaymentFailed`, `PaymentCancelled`, and `PaymentRefunded` now expose `$event->gateway` (derived from the transaction), matching `PaymentInitiated`. Existing listeners reading `$event->transaction` are unaffected.
+- **`WebhookEvent` interface.** `WebhookReceived` and `WebhookVerificationFailed` implement it, so one listener — `Event::listen(WebhookEvent::class, …)` — can observe all webhook activity. The interface exposes a uniform `gateway(): string`.
+- **`WebhookPayload::$correlationId` + `withCorrelationId()`.** The webhook controller tags each delivery's payload with the request correlation id before dispatching `WebhookReceived`, so listeners share the trace id used across parakit's logs for that request. New nullable field, appended — existing construction is unaffected.
+- **`AmountMismatchPolicy` enum** (`Log` / `Reject`) backs `parakit.webhooks.on_amount_mismatch`. Config still accepts the same `'log'`/`'reject'` strings; an invalid value falls back to `Log` and `parakit:doctor` now warns about it.
 
 ### Changed
 - **`PaymentBuilder` setter parameters renamed** for clarity, since PHP 8 named arguments make them public API: `amount(…, $c)` → `$currency`, `description($d)` → `$description`, `idempotencyKey($k)` → `$key`, `metadata($m)` → `$metadata`, `callbackUrl($u)`/`returnUrl($u)` → `$url`, `customerPhone($p)` → `$phone`. Positional calls (`->amount(5000, Currency::IQD)`) are unaffected; only named-argument callers need updating.

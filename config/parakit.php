@@ -10,6 +10,7 @@ return [
         'tolerance_seconds' => 300,
 
         // 'log' warns and still applies; 'reject' refuses the transition.
+        // Any other value falls back to 'log' (parakit:doctor flags it).
         'on_amount_mismatch' => env('PARAKIT_WEBHOOK_ON_AMOUNT_MISMATCH', 'log'),
 
         // Scheduled replay catches orphan events whose gateway stopped retrying.

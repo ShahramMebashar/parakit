@@ -5,6 +5,7 @@ namespace Froshly\Parakit\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
+use Froshly\Parakit\Enums\AmountMismatchPolicy;
 use Froshly\Parakit\Gateways\Fib\FibTokenCache;
 
 class DoctorCommand extends Command
@@ -14,6 +15,11 @@ class DoctorCommand extends Command
 
     public function handle(): int
     {
+        $mismatch = config('parakit.webhooks.on_amount_mismatch');
+        if (is_string($mismatch) && AmountMismatchPolicy::tryFrom($mismatch) === null) {
+            $this->warn("parakit.webhooks.on_amount_mismatch is '{$mismatch}', not a valid policy (log|reject); falling back to 'log'.");
+        }
+
         $only = (string) $this->option('gateway');
         $gateways = $only !== ''
             ? [$only => config("parakit.gateways.{$only}")]

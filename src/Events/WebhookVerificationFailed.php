@@ -5,7 +5,7 @@ namespace Froshly\Parakit\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 
-class WebhookVerificationFailed
+class WebhookVerificationFailed implements WebhookEvent
 {
     use Dispatchable;
 
@@ -14,4 +14,9 @@ class WebhookVerificationFailed
         public readonly string $reason,
         public readonly array $headers = [],
     ) {}
+
+    public function gateway(): string
+    {
+        return $this->gateway;
+    }
 }

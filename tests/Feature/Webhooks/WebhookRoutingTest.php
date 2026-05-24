@@ -39,6 +39,17 @@ it('returns 404 for unknown gateway', function () {
     $this->postJson('/payments/webhooks/nonsense')->assertStatus(404);
 });
 
+it('tags the WebhookReceived payload with a correlation id', function () {
+    \Illuminate\Support\Facades\Event::fake([\Froshly\Parakit\Events\WebhookReceived::class]);
+
+    $this->postJson('/payments/webhooks/stub', ['eid' => '1'])->assertStatus(200);
+
+    \Illuminate\Support\Facades\Event::assertDispatched(
+        \Froshly\Parakit\Events\WebhookReceived::class,
+        fn ($e) => is_string($e->payload->correlationId) && $e->payload->correlationId !== '',
+    );
+});
+
 it('strips sensitive headers from WebhookVerificationFailed events', function () {
     app('parakit.manager')->flushResolved();
     config()->set('parakit.gateways.sigbad', ['driver' => 'sigbad']);

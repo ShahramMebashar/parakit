@@ -12,6 +12,7 @@ use Froshly\Parakit\Exceptions\DuplicateWebhookException;
 use Froshly\Parakit\Exceptions\InvalidWebhookSignatureException;
 use Froshly\Parakit\Exceptions\UnsupportedGatewayException;
 use Froshly\Parakit\PaymentManager;
+use Froshly\Parakit\Support\CorrelationId;
 use Froshly\Parakit\Support\WebhookProcessor;
 
 class WebhookController
@@ -63,6 +64,10 @@ class WebhookController
         if ($processor->isReplay($payload, $tolerance)) {
             return new Response('stale', 400);
         }
+
+        // Tag the payload with this delivery's correlation id so WebhookReceived
+        // listeners share the same trace id as parakit's logs for the request.
+        $payload = $payload->withCorrelationId(CorrelationId::current());
 
         event(new WebhookReceived($payload));
 
