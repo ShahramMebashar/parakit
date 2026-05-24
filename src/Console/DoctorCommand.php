@@ -34,12 +34,7 @@ class DoctorCommand extends Command
             $this->line("Checking {$name}...");
 
             $driverType = (string) ($cfg['driver'] ?? $name);
-            $required = match ($driverType) {
-                'fib'      => ['base_url', 'client_id', 'client_secret', 'callback_url'],
-                'zaincash' => ['base_url', 'client_id', 'client_secret', 'api_key'],
-                'qicard'   => ['base_url', 'username', 'password', 'terminal_id'],
-                default    => null,
-            };
+            $required = $this->requiredKeysFor($driverType);
 
             if ($required === null) {
                 // Unknown driver type — likely registered via PaymentManager::extend().
@@ -85,5 +80,27 @@ class DoctorCommand extends Command
         }
 
         return $ok ? self::SUCCESS : self::FAILURE;
+    }
+
+    /** @return string[]|null */
+    private function requiredKeysFor(string $driverType): ?array
+    {
+        return match ($driverType) {
+            'fib' => ['base_url', 'client_id', 'client_secret', 'callback_url'],
+            'zaincash' => ['base_url', 'client_id', 'client_secret', 'api_key'],
+            'nass' => ['base_url', 'username', 'password', 'callback_url'],
+            'nasswallet' => [
+                'base_url',
+                'portal_url',
+                'basic_token',
+                'username',
+                'password',
+                'transaction_pin',
+                'callback_url',
+            ],
+            'fastpay' => ['base_url', 'store_id', 'store_password', 'callback_url'],
+            'qicard' => ['base_url', 'username', 'password', 'terminal_id'],
+            default => null,
+        };
     }
 }

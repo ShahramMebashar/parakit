@@ -372,10 +372,54 @@ it('does not re-apply an already processed partial refund event', function () {
         ->and(PaymentWebhookEvent::first()->processed_at)->not->toBeNull();
 });
 
-it('rolls back the event row when applyToTransaction fails mid-flight (no orphaned dedupe rows)', function () {
-    // Simulate a listener crash: a PaymentSucceeded listener throws.
-    // The event row insert and the tx update must both roll back so the
-    // gateway's retry is processed afresh rather than dedupe-200'd.
+it('redacts webhook raw payloads before storing event and transaction rows', function () {
+    PaymentTransaction::create([
+        'gateway' => 'stub', 'reference' => 'ord_sensitive', 'gateway_transaction_id' => 'gw_sensitive',
+        'status' => PaymentStatus::Pending, 'amount' => 5000,
+        'currency' => Currency::IQD, 'correlation_id' => 'c',
+    ]);
+
+    app('parakit.manager')->flushResolved();
+    app('parakit.manager')->extend('stub', function () {
+        return new class implements PaymentGateway {
+            public function charge($r): \Froshly\Parakit\DTOs\PaymentResponse { throw new RuntimeException('n/a'); }
+            public function handleWebhook(\Illuminate\Http\Request $r): WebhookPayload {
+                return new WebhookPayload(
+                    gateway: 'stub',
+                    gatewayTransactionId: 'gw_sensitive',
+                    reference: 'ord_sensitive',
+                    status: PaymentStatus::Paid,
+                    amount: 5000,
+                    currency: Currency::IQD,
+                    eventId: 'evt_sensitive',
+                    occurredAt: new DateTimeImmutable(),
+                    raw: [
+                        'access_token' => 'tok_webhook_secret',
+                        'redirect_uri' => 'https://gateway.test/pay?id=1&token=tok_in_url',
+                        'customer' => ['msisdn' => '+9641000000004'],
+                    ],
+                );
+            }
+            public function name(): string { return 'stub'; }
+        };
+    });
+
+    $this->postJson('/payments/webhooks/stub')->assertStatus(200);
+
+    $eventBlob = json_encode(PaymentWebhookEvent::first()->payload, JSON_THROW_ON_ERROR);
+    $transactionBlob = json_encode(PaymentTransaction::first()->last_raw_response, JSON_THROW_ON_ERROR);
+    foreach ([$eventBlob, $transactionBlob] as $blob) {
+        expect($blob)->not->toContain('tok_webhook_secret')
+            ->and($blob)->not->toContain('tok_in_url')
+            ->and($blob)->not->toContain('+9641000000004')
+            ->and($blob)->toContain('[REDACTED]');
+    }
+});
+
+it('commits webhook state even when a lifecycle listener fails after commit', function () {
+    // Merchant listeners are outside Parakit's transaction boundary. A listener
+    // failure should be logged, not roll back the money-state transition.
+    \Illuminate\Support\Facades\Log::spy();
     \Illuminate\Support\Facades\Event::listen(PaymentSucceeded::class, function () {
         throw new RuntimeException('listener exploded');
     });
@@ -388,8 +432,15 @@ it('rolls back the event row when applyToTransaction fails mid-flight (no orphan
     ]);
 
     registerStubDriver('evt_atomic', PaymentStatus::Paid, new DateTimeImmutable());
-    $this->postJson('/payments/webhooks/stub')->assertStatus(500);
+    $this->postJson('/payments/webhooks/stub')->assertStatus(200);
 
-    expect(PaymentWebhookEvent::count())->toBe(0)
-        ->and(PaymentTransaction::first()->status)->toBe(PaymentStatus::Pending);
+    expect(PaymentWebhookEvent::count())->toBe(1)
+        ->and(PaymentWebhookEvent::first()->processed_at)->not->toBeNull()
+        ->and(PaymentTransaction::first()->status)->toBe(PaymentStatus::Paid);
+
+    \Illuminate\Support\Facades\Log::shouldHaveReceived('error')
+        ->with('parakit.domain_event_listener_failed', \Mockery::on(
+            fn (array $context) => $context['event'] === PaymentSucceeded::class
+                && $context['message'] === 'listener exploded',
+        ));
 });

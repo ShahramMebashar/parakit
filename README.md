@@ -60,6 +60,7 @@ NASS_RETURN_URL=https://yourapp.com/payments/nass/return
 
 NASSWALLET_BASE_URL=https://uatgw1.nasswallet.com/payment/transaction
 NASSWALLET_PORTAL_URL=https://uatcheckout1.nasswallet.com
+NASSWALLET_BASIC_TOKEN=your-nasswallet-basic-token
 NASSWALLET_USERNAME=your-nasswallet-username
 NASSWALLET_PASSWORD=your-nasswallet-password
 NASSWALLET_TRANSACTION_PIN=your-transaction-pin

@@ -28,7 +28,7 @@ final class PayloadRedactor
             if (is_array($v)) {
                 $node[$k] = $this->walk($v, $tokens);
             } elseif (is_string($v)) {
-                $node[$k] = $this->redactPanCandidates($v);
+                $node[$k] = $this->redactString($v, $tokens);
             }
         }
         return $node;
@@ -59,13 +59,48 @@ final class PayloadRedactor
         return false;
     }
 
+    /** @param string[] $tokens */
+    private function redactString(string $value, array $tokens): string
+    {
+        return $this->redactPanCandidates(
+            $this->redactSensitiveQueryValues($value, $tokens),
+        );
+    }
+
+    /**
+     * @param string[] $tokens
+     */
+    private function redactSensitiveQueryValues(string $value, array $tokens): string
+    {
+        if (!str_contains($value, '?')) {
+            return $value;
+        }
+
+        $redacted = preg_replace_callback(
+            '/([?&])([^=&#\s]+)=([^&#\s]*)/',
+            function (array $m) use ($tokens) {
+                $key = rawurldecode((string) $m[2]);
+                if (!$this->isSensitiveKey($key, $tokens)) {
+                    return $m[0];
+                }
+
+                return $m[1] . $m[2] . '=' . self::REPLACEMENT;
+            },
+            $value,
+        );
+
+        return is_string($redacted) ? $redacted : $value;
+    }
+
     private function redactPanCandidates(string $value): string
     {
-        return preg_replace_callback(
+        $redacted = preg_replace_callback(
             self::PAN_CANDIDATE_REGEX,
             fn (array $m) => self::luhnValid($m[0]) ? self::REPLACEMENT : $m[0],
             $value,
         );
+
+        return is_string($redacted) ? $redacted : $value;
     }
 
     private static function luhnValid(string $digits): bool

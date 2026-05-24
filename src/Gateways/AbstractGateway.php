@@ -24,6 +24,7 @@ use Froshly\Parakit\Models\PaymentTransaction;
 use Froshly\Parakit\Support\CircuitBreaker;
 use Froshly\Parakit\Support\CorrelationId;
 use Froshly\Parakit\Support\IdempotencyKey;
+use Froshly\Parakit\Support\PersistedPayload;
 use Froshly\Parakit\Support\PaymentLogger;
 use InvalidArgumentException;
 
@@ -93,7 +94,7 @@ abstract class AbstractGateway implements PaymentGateway
                 $response = $this->performCharge($request);
                 $this->breaker->recordSuccess();
                 $this->updateTransactionFromResponse($tx, $response);
-                Cache::put($cacheKey, $response, $ttl);
+                Cache::put($cacheKey, $this->responseForStorage($response), $ttl);
                 return $response;
             } catch (GatewayUnavailableException $e) {
                 if ($e instanceof GatewayTimeoutException) {
@@ -281,14 +282,14 @@ abstract class AbstractGateway implements PaymentGateway
                 'raw_code' => $response->error->rawCode,
                 'raw_message' => $response->error->rawMessage,
             ],
-            'raw' => $response->raw,
+            'raw' => PersistedPayload::prepare($response->raw),
         ];
     }
 
     private function updateTransactionFromResponse(PaymentTransaction $tx, PaymentResponse $response): void
     {
         $tx->gateway_transaction_id = $response->gatewayTransactionId;
-        $tx->last_raw_response = $response->raw;
+        $tx->last_raw_response = PersistedPayload::prepare($response->raw);
         if ($response->expiresAt !== null) {
             $tx->expires_at = \Illuminate\Support\Carbon::instance($response->expiresAt);
         }
@@ -299,6 +300,27 @@ abstract class AbstractGateway implements PaymentGateway
         } else {
             $tx->save();
         }
+    }
+
+    private function responseForStorage(PaymentResponse $response): PaymentResponse
+    {
+        return new PaymentResponse(
+            success: $response->success,
+            gateway: $response->gateway,
+            gatewayTransactionId: $response->gatewayTransactionId,
+            reference: $response->reference,
+            status: $response->status,
+            amount: $response->amount,
+            currency: $response->currency,
+            correlationId: $response->correlationId,
+            redirectUrl: $response->redirectUrl,
+            qrCode: $response->qrCode,
+            deepLink: $response->deepLink,
+            readableCode: $response->readableCode,
+            expiresAt: $response->expiresAt,
+            error: $response->error,
+            raw: PersistedPayload::prepare($response->raw),
+        );
     }
 
     private function markFailed(PaymentTransaction $tx): void

@@ -350,6 +350,56 @@ it('invariant: payment_logs never persists raw credentials, PANs, msisdns, or au
     }
 });
 
+it('redacts raw gateway responses before storing them on transactions and idempotency cache entries', function () {
+    $gw = new class('dummy', []) extends \Froshly\Parakit\Gateways\AbstractGateway {
+        protected function performCharge(\Froshly\Parakit\DTOs\PaymentRequest $r): \Froshly\Parakit\DTOs\PaymentResponse {
+            return new \Froshly\Parakit\DTOs\PaymentResponse(
+                success: true,
+                gateway: 'dummy',
+                gatewayTransactionId: 'g_safe',
+                reference: $r->reference,
+                status: \Froshly\Parakit\Enums\PaymentStatus::Paid,
+                amount: $r->amount,
+                currency: $r->currency,
+                correlationId: 'c',
+                raw: [
+                    'access_token' => 'tok_should_not_persist',
+                    'redirect_uri' => 'https://gateway.test/pay?id=1&token=tok_in_url',
+                    'customer' => ['msisdn' => '+9641000000004'],
+                ],
+            );
+        }
+        public function handleWebhook(\Illuminate\Http\Request $r): \Froshly\Parakit\DTOs\WebhookPayload { throw new RuntimeException('n/a'); }
+        public function name(): string { return 'dummy'; }
+    };
+
+    $response = $gw->charge(new PaymentRequest(
+        'ord_persisted_raw',
+        5000,
+        Currency::IQD,
+        'd',
+        idempotencyKey: 'k_persisted_raw',
+    ));
+    $cached = $gw->charge(new PaymentRequest(
+        'ord_persisted_raw',
+        5000,
+        Currency::IQD,
+        'd',
+        idempotencyKey: 'k_persisted_raw',
+    ));
+
+    expect($response->raw['access_token'])->toBe('tok_should_not_persist');
+
+    $transactionBlob = json_encode(PaymentTransaction::first()->last_raw_response, JSON_THROW_ON_ERROR);
+    $cachedBlob = json_encode($cached->raw, JSON_THROW_ON_ERROR);
+    foreach ([$transactionBlob, $cachedBlob] as $blob) {
+        expect($blob)->not->toContain('tok_should_not_persist')
+            ->and($blob)->not->toContain('tok_in_url')
+            ->and($blob)->not->toContain('+9641000000004')
+            ->and($blob)->toContain('[REDACTED]');
+    }
+});
+
 it('honours parakit.logging.enabled=false and writes no PaymentLog rows', function () {
     config()->set('parakit.logging.enabled', false);
     $gw = new DummyGateway('dummy', []);

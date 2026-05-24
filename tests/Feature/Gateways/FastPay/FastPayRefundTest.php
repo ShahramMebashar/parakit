@@ -31,12 +31,13 @@ function fakeFastPayValidate(): mixed
 }
 
 it('persists the RefundResponse and skips the gateway on retry with the same idempotencyKey', function () {
+    $refundBody = json_decode(file_get_contents(__DIR__ . '/../../../Fixtures/FastPay/refund_success.json'), true);
+    $refundBody['data']['access_token'] = 'tok_refund_secret';
+    $refundBody['data']['redirect_uri'] = 'https://gateway.test/refund?token=tok_refund_url&id=rf_1';
+
     Http::fake([
         '*/api/v1/public/pgw/payment/validate' => fakeFastPayValidate(),
-        '*/api/v1/public/pgw/payment/refund' => Http::response(
-            json_decode(file_get_contents(__DIR__ . '/../../../Fixtures/FastPay/refund_success.json'), true),
-            200,
-        ),
+        '*/api/v1/public/pgw/payment/refund' => Http::response($refundBody, 200),
     ]);
 
     $req = new RefundRequest(
@@ -53,6 +54,12 @@ it('persists the RefundResponse and skips the gateway on retry with the same ide
         ->and(PaymentRefund::first()->idempotency_key)->toBe(
             IdempotencyKey::forGatewayOperation('fastpay', 'refund', 'rfk-1'),
         );
+
+    $storedBlob = json_encode(PaymentRefund::first()->response, JSON_THROW_ON_ERROR);
+    expect($first->raw['data']['access_token'])->toBe('tok_refund_secret')
+        ->and($storedBlob)->not->toContain('tok_refund_secret')
+        ->and($storedBlob)->not->toContain('tok_refund_url')
+        ->and($storedBlob)->toContain('[REDACTED]');
 
     $refunds = 0;
     Http::assertSent(function ($req) use (&$refunds) {

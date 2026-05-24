@@ -96,6 +96,10 @@ For each gateway it checks the required config keys:
 | --- | --- |
 | `fib` | `base_url`, `client_id`, `client_secret`, `callback_url` |
 | `zaincash` | `base_url`, `client_id`, `client_secret`, `api_key` |
+| `nass` | `base_url`, `username`, `password`, `callback_url` |
+| `nasswallet` | `base_url`, `portal_url`, `basic_token`, `username`, `password`, `transaction_pin`, `callback_url` |
+| `fastpay` | `base_url`, `store_id`, `store_password`, `callback_url` |
+| `qicard` | `base_url`, `username`, `password`, `terminal_id` |
 | any other | No built-in check — prints a warning to verify manually. |
 
 When FIB credentials are present, the command clears the cached FIB token

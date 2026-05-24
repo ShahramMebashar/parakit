@@ -35,6 +35,13 @@ return [
         'retention_days' => 90,
     ],
 
+    'raw_payloads' => [
+        // Runtime PaymentResponse/RefundResponse objects keep the raw gateway body.
+        // Anything Parakit stores in its own DB rows/cache goes through this policy.
+        'store' => env('PARAKIT_STORE_RAW_PAYLOADS', true),
+        'redact' => env('PARAKIT_REDACT_RAW_PAYLOADS', true),
+    ],
+
     'sweeper' => [
         'enabled' => true,
         'older_than_minutes' => 5,
@@ -117,7 +124,7 @@ return [
             // Path differs by env: UAT /payment/transaction, PROD /phase3/payment/transaction.
             'base_url'        => env('NASSWALLET_BASE_URL', 'https://uatgw1.nasswallet.com/payment/transaction'),
             'portal_url'      => env('NASSWALLET_PORTAL_URL', 'https://uatcheckout1.nasswallet.com'),
-            'basic_token'     => env('NASSWALLET_BASIC_TOKEN', 'TUVSQ0hBTlRfUEFZTUVOVF9HQVRFV0FZOk1lcmNoYW50R2F0ZXdheUBBZG1pbiMxMjM='),
+            'basic_token'     => env('NASSWALLET_BASIC_TOKEN'),
             'username'        => env('NASSWALLET_USERNAME'),
             'password'        => env('NASSWALLET_PASSWORD'),
             'transaction_pin' => env('NASSWALLET_TRANSACTION_PIN'),

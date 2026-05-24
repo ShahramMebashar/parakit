@@ -49,6 +49,51 @@ it('exits non-zero when a ZainCash credential is missing', function () {
     $this->artisan('parakit:doctor --gateway=zaincash')->assertFailed();
 });
 
+it('validates required config for Nass Pay', function () {
+    config()->set('parakit.gateways.nass', [
+        'driver' => 'nass',
+        'base_url' => 'https://uat-gateway.nass.iq:9746',
+        'username' => 'merchant',
+        'password' => 'secret',
+        'callback_url' => 'https://app.test/payments/webhooks/nass',
+    ]);
+    $this->artisan('parakit:doctor --gateway=nass')->assertSuccessful();
+
+    config()->set('parakit.gateways.nass.password', null);
+    $this->artisan('parakit:doctor --gateway=nass')->assertFailed();
+});
+
+it('validates required config for NassWallet, including the Basic token', function () {
+    config()->set('parakit.gateways.nasswallet', [
+        'driver' => 'nasswallet',
+        'base_url' => 'https://uatgw1.nasswallet.com/payment/transaction',
+        'portal_url' => 'https://uatcheckout1.nasswallet.com',
+        'basic_token' => 'BASIC_TOKEN',
+        'username' => 'merchant',
+        'password' => 'secret',
+        'transaction_pin' => '1234',
+        'callback_url' => 'https://app.test/payments/webhooks/nasswallet',
+    ]);
+    $this->artisan('parakit:doctor --gateway=nasswallet')->assertSuccessful();
+
+    config()->set('parakit.gateways.nasswallet.basic_token', null);
+    $this->artisan('parakit:doctor --gateway=nasswallet')->assertFailed();
+});
+
+it('validates required config for FastPay', function () {
+    config()->set('parakit.gateways.fastpay', [
+        'driver' => 'fastpay',
+        'base_url' => 'https://staging-pgw.fast-pay.iq',
+        'store_id' => 'STORE-1',
+        'store_password' => 'secret',
+        'callback_url' => 'https://app.test/payments/webhooks/fastpay',
+    ]);
+    $this->artisan('parakit:doctor --gateway=fastpay')->assertSuccessful();
+
+    config()->set('parakit.gateways.fastpay.store_password', '');
+    $this->artisan('parakit:doctor --gateway=fastpay')->assertFailed();
+});
+
 it('warns (but still succeeds) when QiCard public_key is unset', function () {
     config()->set('parakit.gateways.qicard', [
         'driver'      => 'qicard',

@@ -73,7 +73,7 @@ final class WebhookProcessor
                 'amount' => $payload->amount,
                 'currency' => $payload->currency->value,
                 'status' => $payload->status->value,
-                'payload' => $payload->raw,
+                'payload' => PersistedPayload::prepare($payload->raw),
             ]);
         } catch (QueryException $e) {
             // SQLSTATE class 23 = integrity constraint violation; anything else must surface (a
@@ -126,7 +126,7 @@ final class WebhookProcessor
             if ($tx->gateway_transaction_id === null) {
                 $tx->gateway_transaction_id = $p->gatewayTransactionId;
             }
-            $tx->last_raw_response = $p->raw;
+            $tx->last_raw_response = PersistedPayload::prepare($p->raw);
 
             // Paid + amount != tx.amount is a mismatch, INCLUDING amount=0 (a buggy gateway
             // reporting `Paid, amount: 0` would otherwise silently settle for the full charge).
@@ -226,10 +226,10 @@ final class WebhookProcessor
     ): void {
         if ($statusChanged) {
             match ($p->status) {
-                PaymentStatus::Paid => event(new PaymentSucceeded($tx)),
-                PaymentStatus::Failed => event(new PaymentFailed($tx)),
-                PaymentStatus::Cancelled, PaymentStatus::Expired => event(new PaymentCancelled($tx)),
-                PaymentStatus::Refunded, PaymentStatus::PartiallyRefunded => event(new PaymentRefunded($tx)),
+                PaymentStatus::Paid => DomainEventDispatcher::afterCommit(new PaymentSucceeded($tx)),
+                PaymentStatus::Failed => DomainEventDispatcher::afterCommit(new PaymentFailed($tx)),
+                PaymentStatus::Cancelled, PaymentStatus::Expired => DomainEventDispatcher::afterCommit(new PaymentCancelled($tx)),
+                PaymentStatus::Refunded, PaymentStatus::PartiallyRefunded => DomainEventDispatcher::afterCommit(new PaymentRefunded($tx)),
                 default => null,
             };
             return;
@@ -237,7 +237,7 @@ final class WebhookProcessor
 
         $isRefund = $p->status === PaymentStatus::Refunded || $p->status === PaymentStatus::PartiallyRefunded;
         if ($refundedAmountChanged && $isRefund) {
-            event(new PaymentRefunded($tx));
+            DomainEventDispatcher::afterCommit(new PaymentRefunded($tx));
         }
     }
 }

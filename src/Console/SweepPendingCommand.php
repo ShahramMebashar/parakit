@@ -13,6 +13,7 @@ use Froshly\Parakit\Events\PaymentSucceeded;
 use Froshly\Parakit\Exceptions\IllegalStateTransitionException;
 use Froshly\Parakit\Models\PaymentTransaction;
 use Froshly\Parakit\PaymentManager;
+use Froshly\Parakit\Support\DomainEventDispatcher;
 
 class SweepPendingCommand extends Command
 {
@@ -102,9 +103,9 @@ class SweepPendingCommand extends Command
     private function fire(PaymentStatus $s, PaymentTransaction $tx): void
     {
         match ($s) {
-            PaymentStatus::Paid => event(new PaymentSucceeded($tx)),
-            PaymentStatus::Failed => event(new PaymentFailed($tx)),
-            PaymentStatus::Cancelled, PaymentStatus::Expired => event(new PaymentCancelled($tx)),
+            PaymentStatus::Paid => DomainEventDispatcher::afterCommit(new PaymentSucceeded($tx)),
+            PaymentStatus::Failed => DomainEventDispatcher::afterCommit(new PaymentFailed($tx)),
+            PaymentStatus::Cancelled, PaymentStatus::Expired => DomainEventDispatcher::afterCommit(new PaymentCancelled($tx)),
             default => null,
         };
     }

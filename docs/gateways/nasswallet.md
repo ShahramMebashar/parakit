@@ -14,7 +14,7 @@ Every key below lives under `gateways.nasswallet` in `config/parakit.php`.
 | --- | --- | --- | --- | --- |
 | `base_url` | `NASSWALLET_BASE_URL` | `https://uatgw1.nasswallet.com/payment/transaction` | No | Full API endpoint base, including the path. The path differs by environment — see Gotchas. |
 | `portal_url` | `NASSWALLET_PORTAL_URL` | `https://uatcheckout1.nasswallet.com` | No | Host of the customer-facing checkout portal. The `redirectUrl` is built from this. |
-| `basic_token` | `NASSWALLET_BASIC_TOKEN` | A shared default is shipped | No | Static HTTP `Basic` token used only on the login call. It is the same for every merchant; Nass Wallet may rotate it. |
+| `basic_token` | `NASSWALLET_BASIC_TOKEN` | — | Yes | Static HTTP `Basic` token used only on the login call. Nass Wallet may rotate it; configure the current value explicitly. |
 | `username` | `NASSWALLET_USERNAME` | — | Yes | Per-merchant login username, also sent as `userIdentifier` on each charge. Issued by Nass Wallet. |
 | `password` | `NASSWALLET_PASSWORD` | — | Yes | Per-merchant login password. Used with `basic_token` to fetch a bearer token. |
 | `transaction_pin` | `NASSWALLET_TRANSACTION_PIN` | — | Yes | Merchant transaction PIN, sent on every charge to authorise it. Issued by Nass Wallet. |

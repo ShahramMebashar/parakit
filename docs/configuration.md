@@ -71,12 +71,24 @@ Controls writes to the `payment_logs` table.
 The default `redact_keys` array:
 
 ```php
-['password', 'token', 'secret', 'card', 'msisdn', 'authorization', 'transactionPin', 'mpin']
+['password', 'token', 'secret', 'key', 'card', 'cvv', 'cvc', 'pan', 'msisdn', 'authorization', 'pin', 'mpin']
 ```
 
-Any payload key matching one of these is redacted. PAN-like numbers are also
-redacted by a Luhn-gated regex regardless of the key name. Add your own keys to
-the array if a gateway returns secrets under different names.
+Any payload key matching one of these word components is redacted. PAN-like
+numbers are also redacted by a Luhn-gated regex regardless of the key name, and
+sensitive URL query values such as `?token=...` are scrubbed. Add your own keys
+to the array if a gateway returns secrets under different names.
+
+## `raw_payloads`
+
+Controls raw gateway bodies that Parakit stores in its own database rows and
+idempotency cache. Runtime `PaymentResponse` and `RefundResponse` objects still
+carry the gateway response returned by the current call.
+
+| Key      | Env var                       | Default | Purpose |
+| -------- | ----------------------------- | ------- | ------- |
+| `store`  | `PARAKIT_STORE_RAW_PAYLOADS`  | `true`  | Store gateway raw payloads on `payment_transactions`, `payment_webhook_events`, `payment_refunds`, and idempotency cache entries. When `false`, Parakit stores an empty array. |
+| `redact` | `PARAKIT_REDACT_RAW_PAYLOADS` | `true`  | Redact stored payloads using `logging.redact_keys` before persistence. |
 
 ## `sweeper`
 

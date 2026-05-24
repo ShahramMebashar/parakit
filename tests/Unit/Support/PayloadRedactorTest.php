@@ -54,6 +54,19 @@ it('redacts gateway-specific credential keys via word-component matching', funct
         ->and($out['storeId'])->toBe('STORE-1');
 });
 
+it('redacts sensitive query-string values inside URL strings', function () {
+    $r = new PayloadRedactor(['token', 'secret', 'key']);
+    $out = $r->redact([
+        'redirect_uri' => 'https://gateway.test/pay?id=123&token=tok_live_123&public_key=pk_live',
+        'safe_uri' => 'https://gateway.test/pay?id=123&keyboard=visible',
+    ]);
+
+    expect($out['redirect_uri'])->toContain('id=123')
+        ->and($out['redirect_uri'])->toContain('token=[REDACTED]')
+        ->and($out['redirect_uri'])->toContain('public_key=[REDACTED]')
+        ->and($out['safe_uri'])->toContain('keyboard=visible');
+});
+
 it('does not redact keys that merely contain a token as a substring (no false positives)', function () {
     $r = new PayloadRedactor(['key', 'card', 'secret', 'pin']);
     $out = $r->redact([

@@ -2,6 +2,18 @@
 
 All notable changes to `froshly/parakit` are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.9.3] — 2026-05-24
+
+Redacts stored raw gateway payloads by default and moves lifecycle events past the database commit.
+
+### Security
+- Stored raw gateway payloads now go through `parakit.raw_payloads`: redacted by default before Parakit writes them to package-owned DB rows or idempotency cache entries, with an opt-out for storing no raw payloads.
+- NassWallet no longer ships a default `basic_token`; merchants must configure `NASSWALLET_BASIC_TOKEN` explicitly.
+
+### Fixed
+- Payment lifecycle events emitted by webhook processing and the pending sweeper now dispatch after the database commit. Listener failures are logged as `parakit.domain_event_listener_failed` and no longer roll back money-state transitions.
+- `parakit:doctor` validates required fields for all shipped gateway drivers, not only FIB, ZainCash, and QiCard.
+
 ## [0.9.2] — 2026-05-21
 
 Hardens refund safety and the idempotency layer.
