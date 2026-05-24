@@ -70,7 +70,7 @@ class ParakitServiceProvider extends ServiceProvider
             $schedule = $this->app->make(\Illuminate\Console\Scheduling\Schedule::class);
 
             if (config('parakit.sweeper.enabled', true)) {
-                $schedule->command('parakit:sweep-pending')
+                $schedule->command('parakit:transactions:sweep-pending')
                     ->everyFiveMinutes()
                     ->withoutOverlapping();
             }

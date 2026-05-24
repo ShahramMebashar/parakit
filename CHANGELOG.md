@@ -2,6 +2,18 @@
 
 All notable changes to `froshly/parakit` are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+Pre-1.0 public-API cleanup — locking names before the v1.0 freeze. **Breaking** (acceptable under the documented "v0.x API may shift" policy).
+
+### Changed
+- **`PaymentBuilder` setter parameters renamed** for clarity, since PHP 8 named arguments make them public API: `amount(…, $c)` → `$currency`, `description($d)` → `$description`, `idempotencyKey($k)` → `$key`, `metadata($m)` → `$metadata`, `callbackUrl($u)`/`returnUrl($u)` → `$url`, `customerPhone($p)` → `$phone`. Positional calls (`->amount(5000, Currency::IQD)`) are unaffected; only named-argument callers need updating.
+- **`payment_refunds.refund_id` column renamed to `gateway_refund_id`** for symmetry with `gateway_transaction_id` in the same table. Apps querying the column directly must update; the `RefundResponse::$refundId` DTO property is unchanged.
+- **Console commands renamed to a consistent `parakit:<group>:<verb>` scheme.** `parakit:webhook:simulate` → `parakit:webhooks:simulate`, `parakit:sweep-pending` → `parakit:transactions:sweep-pending`, `parakit:test-charge` → `parakit:transactions:test-charge`, `parakit:receipt:preview` → `parakit:receipts:preview`. (`parakit:webhooks:replay`, `parakit:logs:prune`, `parakit:install`, `parakit:doctor` are unchanged.) The package-managed schedule is updated automatically; update any hand-written cron/CI invocations.
+
+### Removed
+- **`Froshly\Parakit\Enums\Gateway`** — an unused enum whose `NassPay` case carried the wrong value (`'nasspay'`; the actual driver id is `nass`). It was never referenced by the package. Use the driver string ids (`'fib'`, `'zaincash'`, `'fastpay'`, `'nass'`, `'nasswallet'`, `'qicard'`) as before.
+
 ## [0.9.3] — 2026-05-24
 
 Redacts stored raw gateway payloads by default and moves lifecycle events past the database commit.

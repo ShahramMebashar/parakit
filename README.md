@@ -87,7 +87,7 @@ Verify everything is wired:
 
 ```bash
 php artisan parakit:doctor --gateway=fib
-php artisan parakit:test-charge fib --amount=1000
+php artisan parakit:transactions:test-charge fib --amount=1000
 ```
 
 ---
@@ -161,7 +161,7 @@ Other events: `PaymentInitiated`, `PaymentFailed`, `PaymentCancelled`, `PaymentR
 | **Circuit breaker** | Per-gateway. Fails fast after N failures, auto-recovers after cooldown. |
 | **State machine** | Illegal status transitions (e.g. `Paid → Pending`) throw and are logged — no double-fulfillment. |
 | **Webhook replay protection** | Rejects webhooks older than `parakit.webhooks.tolerance_seconds`. |
-| **Lost-webhook recovery** | `parakit:sweep-pending` polls status for stale pending transactions every 5 minutes. |
+| **Lost-webhook recovery** | `parakit:transactions:sweep-pending` polls status for stale pending transactions every 5 minutes. |
 | **Redacted logging** | Request/response written to `payment_logs` with secrets redacted by configured key names + Luhn-gated PAN regex. |
 | **Correlation IDs** | One ULID traces a payment across `charge → webhook → status → refund`. |
 | **Translations** | en / ar / ckb shipped; publish with `php artisan vendor:publish --tag=parakit-lang`. |
@@ -174,11 +174,11 @@ Other events: `PaymentInitiated`, `PaymentFailed`, `PaymentCancelled`, `PaymentR
 |---|---|
 | `parakit:install` | Publishes config + migrations, runs `migrate`. |
 | `parakit:doctor [--gateway=fib]` | Verifies config + connectivity. Non-zero exit on failure. |
-| `parakit:test-charge fib --amount=1000` | Sandbox roundtrip. Proves end-to-end works. |
-| `parakit:sweep-pending` | Polls status for pending transactions to recover lost webhooks. Auto-scheduled every 5 min. |
-| `parakit:webhook:simulate fib --transaction-id=pid_1 --status=paid` | POSTs a correctly-formed test webhook to your local app. |
+| `parakit:transactions:test-charge fib --amount=1000` | Sandbox roundtrip. Proves end-to-end works. |
+| `parakit:transactions:sweep-pending` | Polls status for pending transactions to recover lost webhooks. Auto-scheduled every 5 min. |
+| `parakit:webhooks:simulate fib --transaction-id=pid_1 --status=paid` | POSTs a correctly-formed test webhook to your local app. |
 | `parakit:logs:prune --days=90` | Trims `payment_logs` per retention policy. Auto-scheduled daily. |
-| `parakit:receipt:preview --all` | Renders sample receipts (every template/type/locale) to disk for previewing designs. `--format=html\|pdf`. |
+| `parakit:receipts:preview --all` | Renders sample receipts (every template/type/locale) to disk for previewing designs. `--format=html\|pdf`. |
 
 ---
 
@@ -224,8 +224,8 @@ $bytes = $pdf->raw();        // raw PDF bytes
 Iterating on a design? Render samples to disk with no real payment needed:
 
 ```bash
-php artisan parakit:receipt:preview --template=modern --locale=ckb   # one
-php artisan parakit:receipt:preview --all --format=html              # the lot
+php artisan parakit:receipts:preview --template=modern --locale=ckb   # one
+php artisan parakit:receipts:preview --all --format=html              # the lot
 ```
 
 `--format=html` is fastest for layout work (open in a browser); `--format=pdf`

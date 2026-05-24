@@ -39,7 +39,7 @@ it('promotes stale pending transactions when status endpoint reports PAID', func
         'currency' => Currency::IQD, 'correlation_id' => 'c',
     ]);
 
-    $this->artisan('parakit:sweep-pending')->assertSuccessful();
+    $this->artisan('parakit:transactions:sweep-pending')->assertSuccessful();
     expect(PaymentTransaction::first()->status)->toBe(PaymentStatus::Paid);
     Event::assertDispatched(PaymentSucceeded::class);
 });
@@ -66,7 +66,7 @@ it('does not re-fire PaymentSucceeded when the row was already Paid (race-safe r
     ]);
     $tx->transitionTo(PaymentStatus::Paid);
 
-    $this->artisan('parakit:sweep-pending')->assertSuccessful();
+    $this->artisan('parakit:transactions:sweep-pending')->assertSuccessful();
 
     Event::assertNotDispatched(PaymentSucceeded::class);
 });

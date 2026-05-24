@@ -17,7 +17,7 @@ use Froshly\Parakit\Support\DomainEventDispatcher;
 
 class SweepPendingCommand extends Command
 {
-    protected $signature = 'parakit:sweep-pending {--gateway=} {--older-than=}';
+    protected $signature = 'parakit:transactions:sweep-pending {--gateway=} {--older-than=}';
     protected $description = 'Poll status for pending transactions to recover lost webhooks';
 
     public function handle(PaymentManager $manager): int

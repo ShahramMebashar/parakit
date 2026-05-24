@@ -92,7 +92,7 @@ carry the gateway response returned by the current call.
 
 ## `sweeper`
 
-The lost-webhook recovery sweeper, run by `parakit:sweep-pending` (scheduled
+The lost-webhook recovery sweeper, run by `parakit:transactions:sweep-pending` (scheduled
 every five minutes when enabled).
 
 | Key                  | Default | Purpose                                                                 |

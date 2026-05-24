@@ -171,7 +171,7 @@ receipts render as empty boxes.
 To eyeball a template design without a real payment, use the preview command:
 
 ```bash
-php artisan parakit:receipt:preview --template=modern --type=payment --locale=en
+php artisan parakit:receipts:preview --template=modern --type=payment --locale=en
 ```
 
 It renders a sample receipt to `storage/parakit-receipts` and prints the path.

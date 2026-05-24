@@ -10,7 +10,7 @@ use Froshly\Parakit\PaymentManager;
 
 class TestChargeCommand extends Command
 {
-    protected $signature = 'parakit:test-charge {gateway} {--amount=1000} {--currency=IQD}';
+    protected $signature = 'parakit:transactions:test-charge {gateway} {--amount=1000} {--currency=IQD}';
     protected $description = 'Run a sandbox roundtrip charge to prove end-to-end works';
 
     public function handle(PaymentManager $manager): int

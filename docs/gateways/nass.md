@@ -65,7 +65,7 @@ return redirect()->away($response->redirectUrl);
 The payment is not final yet. Nass calls your `notifyUrl` and the customer returns to your `backRef` — wait for the webhook (below) before marking the order paid.
 
 ::: tip Status check
-`NassGateway` implements `SupportsStatusCheck`. You can poll Nass at any time with `Payment::driver('nass')->status($gatewayTransactionId)`, which re-fetches the authoritative state. The `parakit:sweep-pending` command uses this to resolve stuck transactions.
+`NassGateway` implements `SupportsStatusCheck`. You can poll Nass at any time with `Payment::driver('nass')->status($gatewayTransactionId)`, which re-fetches the authoritative state. The `parakit:transactions:sweep-pending` command uses this to resolve stuck transactions.
 :::
 
 ## Webhook / callback

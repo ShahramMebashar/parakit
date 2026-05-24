@@ -88,7 +88,7 @@ Two commands confirm everything is wired:
 
 ```bash
 php artisan parakit:doctor --gateway=fib
-php artisan parakit:test-charge fib --amount=1000
+php artisan parakit:transactions:test-charge fib --amount=1000
 ```
 
 `parakit:doctor` checks that the required config keys are present and, for FIB,
@@ -96,7 +96,7 @@ fetches a fresh OAuth token to confirm connectivity. It exits non-zero on
 failure, so it is safe in CI. Drop `--gateway` to check every configured
 gateway at once.
 
-`parakit:test-charge` performs a real sandbox roundtrip against the given
+`parakit:transactions:test-charge` performs a real sandbox roundtrip against the given
 gateway and prints the gateway transaction id plus any redirect URL, readable
 code, or deep link. Override the amount and currency with `--amount` and
 `--currency` (defaults `1000` and `IQD`).

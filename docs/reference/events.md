@@ -62,7 +62,7 @@ available so listeners can link it to their own domain models.
 `Froshly\Parakit\Events\PaymentSucceeded`
 
 Fires when a transaction reaches the `Paid` status — whether confirmed by a
-webhook or by [`parakit:sweep-pending`](/reference/commands).
+webhook or by [`parakit:transactions:sweep-pending`](/reference/commands).
 
 | Property | Type | Description |
 | --- | --- | --- |

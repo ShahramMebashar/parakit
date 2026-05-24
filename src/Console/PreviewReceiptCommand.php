@@ -18,7 +18,7 @@ use InvalidArgumentException;
  */
 class PreviewReceiptCommand extends Command
 {
-    protected $signature = 'parakit:receipt:preview
+    protected $signature = 'parakit:receipts:preview
         {--template=modern : Template to render (modern|classic|minimal)}
         {--type=payment : Receipt type (payment|refund)}
         {--locale=en : Locale to render in (en|ar|ckb)}
