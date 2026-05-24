@@ -31,46 +31,46 @@ final class PaymentBuilder
         return $this;
     }
 
-    public function amount(int $minor, Currency $c): self
+    public function amount(int $minor, Currency $currency): self
     {
         $this->amount = $minor;
-        $this->currency = $c;
+        $this->currency = $currency;
         return $this;
     }
 
-    public function description(string $d): self
+    public function description(string $description): self
     {
-        $this->description = $d;
+        $this->description = $description;
         return $this;
     }
 
-    public function idempotencyKey(string $k): self
+    public function idempotencyKey(string $key): self
     {
-        $this->idempotencyKey = $k;
+        $this->idempotencyKey = $key;
         return $this;
     }
 
-    public function metadata(array $m): self
+    public function metadata(array $metadata): self
     {
-        $this->metadata = $m;
+        $this->metadata = $metadata;
         return $this;
     }
 
-    public function callbackUrl(string $u): self
+    public function callbackUrl(string $url): self
     {
-        $this->callbackUrl = $u;
+        $this->callbackUrl = $url;
         return $this;
     }
 
-    public function returnUrl(string $u): self
+    public function returnUrl(string $url): self
     {
-        $this->returnUrl = $u;
+        $this->returnUrl = $url;
         return $this;
     }
 
-    public function customerPhone(string $p): self
+    public function customerPhone(string $phone): self
     {
-        $this->customerPhone = $p;
+        $this->customerPhone = $phone;
         return $this;
     }
 

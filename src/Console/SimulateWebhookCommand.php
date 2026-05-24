@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 
 class SimulateWebhookCommand extends Command
 {
-    protected $signature = 'parakit:webhook:simulate
+    protected $signature = 'parakit:webhooks:simulate
         {gateway}
         {--status=paid}
         {--reference=}

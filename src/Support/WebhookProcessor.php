@@ -8,6 +8,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Froshly\Parakit\DTOs\WebhookPayload;
+use Froshly\Parakit\Enums\AmountMismatchPolicy;
 use Froshly\Parakit\Enums\PaymentStatus;
 use Froshly\Parakit\Events\PaymentCancelled;
 use Froshly\Parakit\Events\PaymentFailed;
@@ -139,7 +140,7 @@ final class WebhookProcessor
                     'webhook_amount' => $p->amount,
                 ]);
 
-                if (config('parakit.webhooks.on_amount_mismatch', 'log') === 'reject') {
+                if (AmountMismatchPolicy::fromConfig(config('parakit.webhooks.on_amount_mismatch')) === AmountMismatchPolicy::Reject) {
                     $tx->save();
                     $eventRow->update(['processed_at' => now()]);
                     return;

@@ -22,7 +22,7 @@ it('charges via the named driver and prints the transaction id', function () {
         '*/protected/v1/payments' => Http::response(['paymentId' => 'pid_99'], 200),
     ]);
 
-    $this->artisan('parakit:test-charge', ['gateway' => 'fib', '--amount' => 1000])
+    $this->artisan('parakit:transactions:test-charge', ['gateway' => 'fib', '--amount' => 1000])
         ->expectsOutputToContain('pid_99')
         ->assertSuccessful();
 });

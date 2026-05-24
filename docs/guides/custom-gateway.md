@@ -162,7 +162,7 @@ implement one simply does not offer that operation.
 |---|---|
 | `SupportsRefund` | `refund(RefundRequest): RefundResponse` |
 | `SupportsCancel` | `cancel(string $gatewayTransactionId): PaymentResponse` |
-| `SupportsStatusCheck` | `status(string $gatewayTransactionId): PaymentResponse` — used by `parakit:sweep-pending` to recover stuck payments |
+| `SupportsStatusCheck` | `status(string $gatewayTransactionId): PaymentResponse` — used by `parakit:transactions:sweep-pending` to recover stuck payments |
 | `SupportsTokenization` | `tokenize(PaymentRequest): string` and `chargeToken(string, int, Currency): PaymentResponse` |
 
 ```php

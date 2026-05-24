@@ -69,7 +69,7 @@ Pass `language` in the charge metadata to set the portal language: `->metadata([
 :::
 
 ::: tip Status check
-`NassWalletGateway` implements `SupportsStatusCheck`. Call `Payment::driver('nasswallet')->status($gatewayTransactionId)` to re-fetch the authoritative state. The `parakit:sweep-pending` command uses this for stuck transactions.
+`NassWalletGateway` implements `SupportsStatusCheck`. Call `Payment::driver('nasswallet')->status($gatewayTransactionId)` to re-fetch the authoritative state. The `parakit:transactions:sweep-pending` command uses this for stuck transactions.
 :::
 
 ## Webhook / callback

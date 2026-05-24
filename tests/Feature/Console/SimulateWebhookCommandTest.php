@@ -17,7 +17,7 @@ beforeEach(function () {
 it('posts a JWT-signed body to the local webhook URL for ZainCash', function () {
     Http::fake(['*' => Http::response('ok', 200)]);
 
-    $this->artisan('parakit:webhook:simulate', [
+    $this->artisan('parakit:webhooks:simulate', [
         'gateway' => 'zaincash',
         '--status' => 'paid',
         '--reference' => 'ord_1',
@@ -48,7 +48,7 @@ it('posts an unsigned id/status body for FIB (FIB callbacks are unsigned)', func
     ]);
     Http::fake(['*' => Http::response('ok', 200)]);
 
-    $this->artisan('parakit:webhook:simulate', [
+    $this->artisan('parakit:webhooks:simulate', [
         'gateway' => 'fib',
         '--status' => 'paid',
         '--transaction-id' => 'pid_1',
@@ -68,7 +68,7 @@ it('posts an orderId body to the NassPay webhook route', function () {
     ]);
     Http::fake(['*' => Http::response('ok', 200)]);
 
-    $this->artisan('parakit:webhook:simulate', [
+    $this->artisan('parakit:webhooks:simulate', [
         'gateway' => 'nass',
         '--transaction-id' => 'nass_1',
     ])->assertSuccessful();
@@ -88,7 +88,7 @@ it('posts to the NassWallet /callback route with a nested data envelope', functi
     ]);
     Http::fake(['*' => Http::response('ok', 200)]);
 
-    $this->artisan('parakit:webhook:simulate', [
+    $this->artisan('parakit:webhooks:simulate', [
         'gateway' => 'nasswallet',
         '--transaction-id' => 'nw_1',
     ])->assertSuccessful();
@@ -106,7 +106,7 @@ it('posts an order_id body to the FastPay webhook route', function () {
     ]);
     Http::fake(['*' => Http::response('ok', 200)]);
 
-    $this->artisan('parakit:webhook:simulate', [
+    $this->artisan('parakit:webhooks:simulate', [
         'gateway' => 'fastpay',
         '--transaction-id' => 'fp_1',
     ])->assertSuccessful();

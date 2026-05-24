@@ -15,7 +15,7 @@ return new class extends Migration {
             $t->string('gateway_transaction_id')->index();
             $t->unsignedBigInteger('amount');
             $t->string('status', 32)->index();
-            $t->string('refund_id')->nullable();
+            $t->string('gateway_refund_id')->nullable();
             $t->unsignedBigInteger('refunded_amount')->default(0);
             $t->json('response')->nullable();
             $t->timestamp('completed_at')->nullable();

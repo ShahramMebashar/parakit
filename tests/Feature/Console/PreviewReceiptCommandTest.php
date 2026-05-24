@@ -13,7 +13,7 @@ afterEach(function () {
 });
 
 it('renders a single HTML preview, RTL-aware', function () {
-    $this->artisan('parakit:receipt:preview', [
+    $this->artisan('parakit:receipts:preview', [
         '--template' => 'classic',
         '--type'     => 'payment',
         '--locale'   => 'ckb',
@@ -26,7 +26,7 @@ it('renders a single HTML preview, RTL-aware', function () {
 });
 
 it('renders the full template × type × locale matrix with --all', function () {
-    $this->artisan('parakit:receipt:preview', [
+    $this->artisan('parakit:receipts:preview', [
         '--all'    => true,
         '--output' => $this->previewDir,
     ])->assertSuccessful();
@@ -36,7 +36,7 @@ it('renders the full template × type × locale matrix with --all', function () 
 });
 
 it('renders a real PDF when --format=pdf', function () {
-    $this->artisan('parakit:receipt:preview', [
+    $this->artisan('parakit:receipts:preview', [
         '--template' => 'modern',
         '--format'   => 'pdf',
         '--output'   => $this->previewDir,
@@ -47,14 +47,14 @@ it('renders a real PDF when --format=pdf', function () {
 });
 
 it('fails on an unknown template', function () {
-    $this->artisan('parakit:receipt:preview', [
+    $this->artisan('parakit:receipts:preview', [
         '--template' => 'fancy',
         '--output'   => $this->previewDir,
     ])->assertFailed();
 });
 
 it('fails on an unknown format', function () {
-    $this->artisan('parakit:receipt:preview', [
+    $this->artisan('parakit:receipts:preview', [
         '--format'   => 'docx',
         '--output'   => $this->previewDir,
     ])->assertFailed();

@@ -12,7 +12,7 @@ gateway you pick.
 If you have used Laravel before, Parakit will feel familiar: a facade, a fluent
 builder, config in `config/parakit.php`, events you can listen for. The goal is
 a first sandbox charge in about 15 minutes — `composer require`, `parakit:install`,
-add credentials, run `parakit:test-charge`.
+add credentials, run `parakit:transactions:test-charge`.
 
 ```php
 use Froshly\Parakit\Facades\Payment;
@@ -62,7 +62,7 @@ handled for you:
   recovers automatically after a cooldown.
 - **Redacted logging** — requests and responses are written to `payment_logs`
   with secrets stripped by key name and a Luhn-gated PAN regex.
-- **Lost-webhook sweeper** — `parakit:sweep-pending` polls stale pending
+- **Lost-webhook sweeper** — `parakit:transactions:sweep-pending` polls stale pending
   transactions so a dropped webhook does not strand an order.
 - **PDF receipts** — turn any stored transaction into a branded payment or
   refund PDF, no gateway call involved.

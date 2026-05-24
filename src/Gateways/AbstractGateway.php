@@ -162,7 +162,7 @@ abstract class AbstractGateway implements PaymentGateway
 
         $attempt->forceFill([
             'status' => 'succeeded',
-            'refund_id' => $response->refundId,
+            'gateway_refund_id' => $response->refundId,
             'refunded_amount' => $response->refundedAmount,
             'response' => $this->refundResponseToArray($response),
             'completed_at' => now(),
@@ -261,7 +261,7 @@ abstract class AbstractGateway implements PaymentGateway
 
         return new RefundResponse(
             success: true,
-            refundId: is_string($attempt->refund_id) && $attempt->refund_id !== '' ? $attempt->refund_id : null,
+            refundId: is_string($attempt->gateway_refund_id) && $attempt->gateway_refund_id !== '' ? $attempt->gateway_refund_id : null,
             refundedAmount: (int) $attempt->refunded_amount,
             error: $error,
             raw: $raw,

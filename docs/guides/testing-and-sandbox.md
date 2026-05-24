@@ -13,10 +13,10 @@ full roundtrip. Parakit ships three commands for exactly that.
 php artisan parakit:doctor
 
 # 2. A real sandbox charge, end to end
-php artisan parakit:test-charge fib --amount=1000 --currency=IQD
+php artisan parakit:transactions:test-charge fib --amount=1000 --currency=IQD
 
 # 3. A simulated webhook posted to your local app
-php artisan parakit:webhook:simulate fib --transaction-id=pid_1 --status=paid
+php artisan parakit:webhooks:simulate fib --transaction-id=pid_1 --status=paid
 ```
 
 See [Artisan commands](/reference/commands) for every option of every command.
@@ -48,13 +48,13 @@ has no built-in field check — `doctor` reports it as unverified and asks you t
 confirm the config manually.
 :::
 
-## `parakit:test-charge` — a real sandbox roundtrip
+## `parakit:transactions:test-charge` — a real sandbox roundtrip
 
-`parakit:test-charge` builds a `PaymentRequest` with a random reference and runs
+`parakit:transactions:test-charge` builds a `PaymentRequest` with a random reference and runs
 a genuine `charge()` against the gateway you name:
 
 ```bash
-php artisan parakit:test-charge fib --amount=1000 --currency=IQD
+php artisan parakit:transactions:test-charge fib --amount=1000 --currency=IQD
 ```
 
 `--amount` defaults to `1000` and `--currency` to `IQD`. On success it prints
@@ -76,14 +76,14 @@ hits the production gateway. Confirm `base_url` and credentials are sandbox
 before you run it.
 :::
 
-## `parakit:webhook:simulate` — a local webhook
+## `parakit:webhooks:simulate` — a local webhook
 
 You usually cannot receive a real gateway callback on `localhost`.
-`parakit:webhook:simulate` closes that gap by POSTing a webhook to your own
+`parakit:webhooks:simulate` closes that gap by POSTing a webhook to your own
 route, so your verification and listeners run for real:
 
 ```bash
-php artisan parakit:webhook:simulate fib \
+php artisan parakit:webhooks:simulate fib \
   --transaction-id=pid_1 --status=paid
 ```
 

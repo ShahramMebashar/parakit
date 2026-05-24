@@ -19,10 +19,10 @@ php artisan parakit:doctor --gateway=fib
 | --- | --- | --- |
 | `parakit:install` | Setup | Publishes config and migrations, then runs `migrate`. |
 | `parakit:doctor` | Diagnostics | Checks gateway config and FIB token connectivity. |
-| `parakit:test-charge` | Diagnostics | Runs a sandbox charge end to end. |
-| `parakit:webhook:simulate` | Diagnostics | Posts a signed test webhook to your local app. |
-| `parakit:receipt:preview` | Diagnostics | Renders sample receipts to disk for design review. |
-| `parakit:sweep-pending` | Operations | Polls pending transactions to recover lost webhooks. |
+| `parakit:transactions:test-charge` | Diagnostics | Runs a sandbox charge end to end. |
+| `parakit:webhooks:simulate` | Diagnostics | Posts a signed test webhook to your local app. |
+| `parakit:receipts:preview` | Diagnostics | Renders sample receipts to disk for design review. |
+| `parakit:transactions:sweep-pending` | Operations | Polls pending transactions to recover lost webhooks. |
 | `parakit:logs:prune` | Operations | Deletes `payment_logs` rows past the retention window. |
 
 All commands return `0` on success. Failure codes are noted per command below.
@@ -124,13 +124,13 @@ Drivers registered through `Payment::extend()` have no built-in config check.
 The doctor reports a warning for them rather than a false OK.
 :::
 
-### `parakit:test-charge`
+### `parakit:transactions:test-charge`
 
 Runs a real sandbox charge against a gateway to prove the integration works
 end to end. Use it after configuring credentials.
 
 ```
-parakit:test-charge {gateway} {--amount=1000} {--currency=IQD}
+parakit:transactions:test-charge {gateway} {--amount=1000} {--currency=IQD}
 ```
 
 | Argument | Required | Description |
@@ -147,7 +147,7 @@ charges the gateway. On success it prints the gateway transaction id and any
 redirect URL, readable code, or deep link the response carries.
 
 ```bash
-php artisan parakit:test-charge fib --amount=5000 --currency=IQD
+php artisan parakit:transactions:test-charge fib --amount=5000 --currency=IQD
 ```
 
 | Exit code | Meaning |
@@ -160,13 +160,13 @@ The random reference suffix is sandbox-only and is not collision-safe at
 production volumes. Point this command at sandbox credentials.
 :::
 
-### `parakit:webhook:simulate`
+### `parakit:webhooks:simulate`
 
 Posts a test webhook to your local app, so you can exercise your webhook
 handling without waiting on the real gateway.
 
 ```
-parakit:webhook:simulate {gateway} {--status=paid} {--reference=} {--transaction-id=} {--sign-with=}
+parakit:webhooks:simulate {gateway} {--status=paid} {--reference=} {--transaction-id=} {--sign-with=}
 ```
 
 | Argument | Required | Description |
@@ -202,7 +202,7 @@ the transition only applies if the gateway recognises the transaction id.
 :::
 
 ```bash
-php artisan parakit:webhook:simulate fib \
+php artisan parakit:webhooks:simulate fib \
   --status=paid \
   --reference=ORD-2048 \
   --transaction-id=pid_5f3a9c2e
@@ -216,13 +216,13 @@ php artisan parakit:webhook:simulate fib \
 See [Handling webhooks](/guides/handling-webhooks) for how the endpoint
 verifies and processes these requests.
 
-### `parakit:receipt:preview`
+### `parakit:receipts:preview`
 
 Renders sample receipts to disk so you can review template designs without
 wiring up a real payment.
 
 ```
-parakit:receipt:preview {--template=modern} {--type=payment} {--locale=en} {--format=html} {--output=} {--all}
+parakit:receipts:preview {--template=modern} {--type=payment} {--locale=en} {--format=html} {--output=} {--all}
 ```
 
 | Option | Default | Description |
@@ -240,10 +240,10 @@ refunded for `refund`), so no database row is required.
 
 ```bash
 # Preview one combination as HTML
-php artisan parakit:receipt:preview --template=classic --type=refund --locale=ar
+php artisan parakit:receipts:preview --template=classic --type=refund --locale=ar
 
 # Render every combination as PDF
-php artisan parakit:receipt:preview --all --format=pdf
+php artisan parakit:receipts:preview --all --format=pdf
 ```
 
 | Exit code | Meaning |
@@ -261,18 +261,18 @@ application's scheduler — for example in `routes/console.php`:
 ```php
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::command('parakit:sweep-pending')->everyFiveMinutes();
+Schedule::command('parakit:transactions:sweep-pending')->everyFiveMinutes();
 Schedule::command('parakit:logs:prune')->daily();
 ```
 
-### `parakit:sweep-pending`
+### `parakit:transactions:sweep-pending`
 
 Polls the gateway for the status of transactions still in `Pending` or
 `Processing`, then reconciles their local status. This recovers transactions
 whose webhook was lost or never delivered.
 
 ```
-parakit:sweep-pending {--gateway=} {--older-than=}
+parakit:transactions:sweep-pending {--gateway=} {--older-than=}
 ```
 
 | Option | Default | Description |
@@ -299,10 +299,10 @@ Gateways that do not implement `SupportsStatusCheck` are skipped.
 
 ```bash
 # Sweep everything older than the configured window
-php artisan parakit:sweep-pending
+php artisan parakit:transactions:sweep-pending
 
 # Sweep only FIB rows untouched for 15+ minutes
-php artisan parakit:sweep-pending --gateway=fib --older-than=15
+php artisan parakit:transactions:sweep-pending --gateway=fib --older-than=15
 ```
 
 Exit code: always `0`. The command prints how many transactions it updated.

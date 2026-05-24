@@ -10,5 +10,10 @@ class PaymentCancelled
 {
     use Dispatchable;
 
-    public function __construct(public readonly PaymentTransaction $transaction) {}
+    public readonly string $gateway;
+
+    public function __construct(public readonly PaymentTransaction $transaction)
+    {
+        $this->gateway = (string) $transaction->gateway;
+    }
 }

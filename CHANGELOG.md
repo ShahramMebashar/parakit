@@ -2,6 +2,24 @@
 
 All notable changes to `froshly/parakit` are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+Pre-1.0 API cleanup (breaking) plus backward-compatible additions.
+
+### Added
+- `$gateway` on `PaymentSucceeded`/`Failed`/`Cancelled`/`Refunded`, matching `PaymentInitiated`.
+- `WebhookEvent` interface (uniform `gateway(): string`) on both webhook events — one listener catches all.
+- `WebhookPayload::$correlationId` + `withCorrelationId()`; the controller tags each delivery before `WebhookReceived`.
+- `AmountMismatchPolicy` enum (`Log`/`Reject`) for `webhooks.on_amount_mismatch`; invalid values fall back to `Log` and `parakit:doctor` warns.
+
+### Changed (breaking)
+- `PaymentBuilder` setter params renamed (`$c`→`$currency`, `$d`→`$description`, `$k`→`$key`, `$m`→`$metadata`, `$u`→`$url`, `$p`→`$phone`). Positional calls unaffected.
+- `payment_refunds.refund_id` → `gateway_refund_id`.
+- Commands renamed to `parakit:<group>:<verb>`: `webhook:simulate`→`webhooks:simulate`, `sweep-pending`→`transactions:sweep-pending`, `test-charge`→`transactions:test-charge`, `receipt:preview`→`receipts:preview`.
+
+### Removed
+- `Froshly\Parakit\Enums\Gateway` — unused, and its `NassPay` value was wrong (`nasspay` vs driver `nass`). Use the driver string ids.
+
 ## [0.9.3] — 2026-05-24
 
 Redacts stored raw gateway payloads by default and moves lifecycle events past the database commit.

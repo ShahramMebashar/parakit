@@ -92,7 +92,7 @@ If a gateway never delivers a webhook, a transaction would sit `Pending`
 forever. The sweeper polls gateway status to recover those:
 
 ```bash
-php artisan parakit:sweep-pending
+php artisan parakit:transactions:sweep-pending
 ```
 
 It selects `Pending` and `Processing` transactions that are:
@@ -114,7 +114,7 @@ never races webhook processing.
 `--gateway=` and `--older-than=` flags override the gateway filter and the age
 threshold for a single run.
 
-When `sweeper.enabled` is `true`, parakit schedules `parakit:sweep-pending`
+When `sweeper.enabled` is `true`, parakit schedules `parakit:transactions:sweep-pending`
 every five minutes (with `withoutOverlapping()`) — no manual cron entry needed,
 as long as Laravel's scheduler is running.
 
