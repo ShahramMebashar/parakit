@@ -151,7 +151,7 @@ that is not a positive integer.
 | `readableCode` | `?string` | Short human-readable code (FIB). |
 | `expiresAt` | `?DateTimeImmutable` | When the payment stops being payable. |
 | `error` | `?PaymentError` | Set when the charge failed. |
-| `raw` | `array` | The gateway's untouched response body. |
+| `raw` | `array` | The gateway response body. Fresh gateway calls return it untouched; idempotency replays may return a redacted or empty copy according to `parakit.raw_payloads`. |
 
 `failed()` is the inverse of `success`.
 
@@ -206,6 +206,10 @@ Without an idempotency key, a double-submitted checkout form creates two
 charges. With one, a second `charge()` within `parakit.reliability.idempotency_ttl`
 (24h by default) returns the cached first response instead of calling the
 gateway again.
+
+Cached responses are package-owned persisted data. Their `raw` payload follows
+the `parakit.raw_payloads` policy, so it may be redacted by default or empty if
+raw payload storage is disabled.
 
 The key is also a precondition for safe retries. See
 [Reliability](/guides/reliability).

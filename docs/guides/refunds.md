@@ -88,7 +88,7 @@ For gateways that only do full refunds, pass the original charge amount as
 | `refundId` | `?string` | The gateway's refund/reversal id. |
 | `refundedAmount` | `int` | Minor units actually refunded. |
 | `error` | `?PaymentError` | Set when `success` is `false`. |
-| `raw` | `array` | The gateway's untouched response. |
+| `raw` | `array` | The gateway response body. Fresh refund calls return it untouched; idempotency replays may return a redacted or empty copy according to `parakit.raw_payloads`. |
 
 `RefundResponse` has no `failed()` method — branch on `success` directly.
 
