@@ -18,7 +18,7 @@ Every key below lives under `gateways.nasswallet` in `config/parakit.php`.
 | `username` | `NASSWALLET_USERNAME` | — | Yes | Per-merchant login username, also sent as `userIdentifier` on each charge. Issued by Nass Wallet. |
 | `password` | `NASSWALLET_PASSWORD` | — | Yes | Per-merchant login password. Used with `basic_token` to fetch a bearer token. |
 | `transaction_pin` | `NASSWALLET_TRANSACTION_PIN` | — | Yes | Merchant transaction PIN, sent on every charge to authorise it. Issued by Nass Wallet. |
-| `callback_url` | `NASSWALLET_CALLBACK_URL` | — | No | Server-to-server notification URL. See Webhook / callback — Nass Wallet appends `/callback` to whatever you configure. |
+| `callback_url` | `NASSWALLET_CALLBACK_URL` | — | Yes | Server-to-server notification URL. Parakit does not send this value in `initTransaction`; register it manually with your Nass Wallet Business merchant account. See Webhook / callback. |
 
 ## `.env` example
 
@@ -73,6 +73,23 @@ Pass `language` in the charge metadata to set the portal language: `->metadata([
 :::
 
 ## Webhook / callback
+
+::: warning Register the callback with Nass Wallet Business
+Setting `NASSWALLET_CALLBACK_URL` only records the URL in your application's
+configuration. Nass Wallet's `initTransaction` API does not receive this value,
+so it does not register the callback automatically.
+
+Ask Nass Wallet Business support or your merchant account manager to register
+the following notification URL for your merchant account:
+
+```
+https://your-app.test/payments/webhooks/nasswallet
+```
+
+Use your public HTTPS application domain. Do not include `/callback` when
+registering the URL unless Nass Wallet explicitly instructs you otherwise;
+their gateway appends that suffix when delivering the notification.
+:::
 
 Nass Wallet appends `/callback` to the notification URL you configure. If you set `NASSWALLET_CALLBACK_URL` to `https://your-app.test/payments/webhooks/nasswallet`, Nass Wallet actually calls:
 
