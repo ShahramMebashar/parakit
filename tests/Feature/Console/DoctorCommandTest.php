@@ -44,6 +44,57 @@ it('reports OK when all checks pass', function () {
     $this->artisan('parakit:doctor --gateway=fib')->assertSuccessful();
 });
 
+it('checks only the default gateway when no selection option is given', function () {
+    Http::fake([
+        '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 600]),
+    ]);
+    config()->set('parakit.default', 'fib');
+    config()->set('parakit.gateways.zaincash', [
+        'driver' => 'zaincash',
+        'base_url' => 'https://pg-api-uat.zaincash.iq',
+    ]);
+
+    $this->artisan('parakit:doctor')
+        ->expectsOutputToContain('Checking fib...')
+        ->doesntExpectOutputToContain('Checking zaincash...')
+        ->assertSuccessful();
+});
+
+it('checks every declared gateway only when all is requested', function () {
+    Http::fake([
+        '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 600]),
+    ]);
+    config()->set('parakit.gateways.zaincash', [
+        'driver' => 'zaincash',
+        'base_url' => 'https://pg-api-uat.zaincash.iq',
+    ]);
+
+    $this->artisan('parakit:doctor --all')
+        ->expectsOutputToContain('Checking fib...')
+        ->expectsOutputToContain('Checking zaincash...')
+        ->assertFailed();
+});
+
+it('rejects conflicting gateway selection options', function () {
+    $this->artisan('parakit:doctor --gateway=fib --all')
+        ->expectsOutputToContain('Use either --gateway or --all, not both.')
+        ->assertFailed();
+});
+
+it('fails clearly when the selected gateway is not configured', function () {
+    $this->artisan('parakit:doctor --gateway=unknown')
+        ->expectsOutputToContain("Gateway 'unknown' is not configured")
+        ->assertFailed();
+});
+
+it('fails clearly when the default gateway is not configured', function () {
+    config()->set('parakit.default', 'unknown');
+
+    $this->artisan('parakit:doctor')
+        ->expectsOutputToContain("Gateway 'unknown' is not configured")
+        ->assertFailed();
+});
+
 it('exits non-zero when required config is missing', function () {
     config()->set('parakit.gateways.fib.client_secret', null);
     $this->artisan('parakit:doctor --gateway=fib')->assertFailed();

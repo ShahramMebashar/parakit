@@ -18,7 +18,7 @@ php artisan parakit:doctor --gateway=fib
 | Command | Group | What it does |
 | --- | --- | --- |
 | `parakit:install` | Setup | Publishes config and migrations, then runs `migrate`. |
-| `parakit:doctor` | Diagnostics | Checks gateway config and FIB token connectivity. |
+| `parakit:doctor` | Diagnostics | Checks the default or selected gateway config and available connectivity checks. |
 | `parakit:transactions:test-charge` | Diagnostics | Runs a sandbox charge end to end. |
 | `parakit:webhooks:simulate` | Diagnostics | Posts a signed test webhook to your local app. |
 | `parakit:receipts:preview` | Diagnostics | Renders sample receipts to disk for design review. |
@@ -79,16 +79,20 @@ full setup walkthrough and the credentials each gateway needs.
 
 ### `parakit:doctor`
 
-Verifies that each configured gateway has the config keys it needs, and — for
-FIB — that the credentials can actually fetch a token.
+Verifies that the selected gateway has the config keys it needs, and — for FIB
+— that the credentials can actually fetch a token. With no option, it checks
+only `parakit.default`; unused gateway templates are not treated as failures.
 
 ```
-parakit:doctor {--gateway=}
+parakit:doctor {--gateway=} {--all}
 ```
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `--gateway=` | all gateways | Limit the check to a single gateway key. |
+| `--gateway=` | `parakit.default` | Check a specific gateway key. |
+| `--all` | off | Check every gateway declared under `parakit.gateways`. |
+
+`--gateway` and `--all` are mutually exclusive.
 
 For each gateway it checks the required config keys:
 
@@ -107,17 +111,20 @@ When FIB credentials are present, the command clears the cached FIB token
 secret would otherwise let the check pass while live charges return `401`.
 
 ```bash
-# Check every configured gateway
+# Check the default gateway
 php artisan parakit:doctor
 
 # Check only FIB
 php artisan parakit:doctor --gateway=fib
+
+# Check every declared gateway
+php artisan parakit:doctor --all
 ```
 
 | Exit code | Meaning |
 | --- | --- |
 | `0` | All checks passed. |
-| `1` | A gateway is missing config, failed the FIB token fetch, or no gateways are configured. |
+| `1` | The selection is invalid, a checked gateway is missing config, the FIB token fetch failed, or no gateways are configured. |
 
 ::: warning
 Drivers registered through `Payment::extend()` have no built-in config check.

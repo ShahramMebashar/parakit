@@ -23,14 +23,18 @@ See [Artisan commands](/reference/commands) for every option of every command.
 
 ## `parakit:doctor` — config and connectivity
 
-`parakit:doctor` checks each configured gateway. For drivers it knows, it
-verifies the required config keys are present, and for FIB it forces a fresh
-token fetch to prove the credentials authenticate:
+`parakit:doctor` checks the default gateway unless you select another one. For
+drivers it knows, it verifies the required config keys are present, and for FIB
+it forces a fresh token fetch to prove the credentials authenticate:
 
 ```bash
-php artisan parakit:doctor              # all gateways
-php artisan parakit:doctor --gateway=fib  # one gateway
+php artisan parakit:doctor                 # default gateway
+php artisan parakit:doctor --gateway=fib   # one gateway
+php artisan parakit:doctor --all           # every declared gateway
 ```
+
+Unused gateway templates are ignored in the default mode, so an application
+using only one provider is not failed for credentials it does not need.
 
 It makes no charge and moves no money, so it is safe to run anywhere — including
 CI. It exits non-zero when any check fails, so a pipeline step against sandbox
