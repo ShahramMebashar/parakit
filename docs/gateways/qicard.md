@@ -49,8 +49,8 @@ The example values above are QiCard's **sandbox** credentials. The matching test
 use Froshly\Parakit\Facades\Payment;
 use Froshly\Parakit\Enums\Currency;
 
-$response = Payment::driver('qicard')
-    ->for($order)
+$response = Payment::for($order)
+    ->driver('qicard')
     ->amount(25000, Currency::IQD)
     ->description('Order #'.$order->id)
     ->returnUrl('https://your-app.test/checkout/finish/'.$order->id)

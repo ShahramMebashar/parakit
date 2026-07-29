@@ -44,8 +44,8 @@ Charge a customer through the `Payment` facade. ZainCash settles in Iraqi dinars
 use Froshly\Parakit\Facades\Payment;
 use Froshly\Parakit\Enums\Currency;
 
-$response = Payment::driver('zaincash')
-    ->for($order)
+$response = Payment::for($order)
+    ->driver('zaincash')
     ->amount(25000, Currency::IQD)
     ->description('Order #'.$order->id)
     ->returnUrl(route('checkout.zaincash.return'))
