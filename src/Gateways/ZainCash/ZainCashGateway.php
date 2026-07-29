@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Froshly\Parakit\Gateways\ZainCash;
 
 use DateTimeImmutable;
+use InvalidArgumentException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Ramsey\Uuid\Uuid;
@@ -47,6 +48,12 @@ final class ZainCashGateway extends AbstractGateway implements SupportsStatusChe
 
     protected function performCharge(PaymentRequest $request): PaymentResponse
     {
+        if ($request->currency !== Currency::IQD) {
+            throw new InvalidArgumentException(
+                'ZainCash settles IQD only; got ' . $request->currency->value
+            );
+        }
+
         // externalReferenceId must be stable across retries; derive a UUIDv5 from the idempotency key.
         $idemKey = IdempotencyKey::localForRequest($this->name(), $request);
         $externalReferenceId = Uuid::uuid5(
@@ -76,7 +83,20 @@ final class ZainCashGateway extends AbstractGateway implements SupportsStatusChe
             $payload['customer'] = ['phone' => $request->customerPhone];
         }
 
-        $raw = $this->client->init($payload);
+        try {
+            $raw = $this->client->init($payload);
+        } catch (ZainCashApiException $e) {
+            $transactionId = data_get($e->response, 'transactionDetails.transactionId');
+            $errorText = strtoupper($e->apiCode . ' ' . $e->getMessage());
+            $duplicate = str_contains($errorText, 'DUPLICAT')
+                || str_contains($errorText, 'ALREADY_EXISTS');
+
+            if (! $duplicate || ! is_string($transactionId) || $transactionId === '') {
+                throw $e;
+            }
+
+            $raw = $this->client->inquiry($transactionId);
+        }
 
         $transactionId = $raw['transactionDetails']['transactionId'] ?? null;
         $redirectUrl = $raw['redirectUrl'] ?? null;

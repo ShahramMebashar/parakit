@@ -4,6 +4,8 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-07-29
+
 Pre-1.0 API cleanup (breaking) plus backward-compatible additions.
 
 ### Added
@@ -16,6 +18,20 @@ Pre-1.0 API cleanup (breaking) plus backward-compatible additions.
 - `PaymentBuilder` setter params renamed (`$c`→`$currency`, `$d`→`$description`, `$k`→`$key`, `$m`→`$metadata`, `$u`→`$url`, `$p`→`$phone`). Positional calls unaffected.
 - `payment_refunds.refund_id` → `gateway_refund_id`.
 - Commands renamed to `parakit:<group>:<verb>`: `webhook:simulate`→`webhooks:simulate`, `sweep-pending`→`transactions:sweep-pending`, `test-charge`→`transactions:test-charge`, `receipt:preview`→`receipts:preview`.
+- Laravel 11 support was removed because the framework line is outside upstream security support. Parakit v1 supports Laravel 12 and 13.
+
+### Fixed
+- Transient charge failures now remain `Pending` when the provider outcome is unknown. FIB create retries are disabled because its API has no merchant idempotency key; retry-capable gateways continue to use stable provider-side request identifiers.
+- FastPay now uses the documented merchant API host, accepts numeric-string response codes, and returns deterministic refund rejections without hiding transport failures.
+- FIB now enforces IQD, omits empty optional callback fields, maps decline reasons and refund states correctly, supports all documented app links, and validates full-refund amounts against provider state.
+- Nass Pay sends schema-correct numeric amounts, string transaction types, and the optional cardholder email.
+- Nass Wallet accepts numeric-string success codes and preserves the stored payment amount when status responses omit it.
+- QiCard sends numeric amounts, uses UUID request identifiers, reconciles duplicate create requests, and treats processing refunds as unresolved rather than successful.
+- ZainCash now enforces IQD, refreshes expired tokens once, distinguishes retryable server failures from deterministic API rejections, and reconciles duplicate external references through inquiry.
+- OAuth token caches no longer outlive very short provider token lifetimes, and login connection failures carry timeout context.
+
+### Security
+- Patched the Vite and PostCSS versions used to build the documentation site.
 
 ### Removed
 - `Froshly\Parakit\Enums\Gateway` — unused, and its `NassPay` value was wrong (`nasspay` vs driver `nass`). Use the driver string ids.

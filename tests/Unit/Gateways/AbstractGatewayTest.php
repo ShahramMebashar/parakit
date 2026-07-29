@@ -158,7 +158,7 @@ it('updates the transaction with the gateway response on success', function () {
         ->and($tx->status)->toBe(PaymentStatus::Pending);
 });
 
-it('marks the transaction Failed when the gateway fails, and rethrows', function () {
+it('keeps the transaction Pending when a transient gateway outcome is unknown', function () {
     config()->set('parakit.reliability.retry.max_attempts', 1);
 
     $gw = new class('dummy', []) extends AbstractGateway {
@@ -174,7 +174,7 @@ it('marks the transaction Failed when the gateway fails, and rethrows', function
 
     $tx = PaymentTransaction::where('idempotency_key', 'w3')->first();
     expect($tx)->not->toBeNull()
-        ->and($tx->status)->toBe(PaymentStatus::Failed);
+        ->and($tx->status)->toBe(PaymentStatus::Pending);
 });
 
 it('marks the transaction Failed on a non-gateway exception and rethrows', function () {
@@ -270,6 +270,37 @@ it('opens the circuit after threshold failures and fails fast thereafter', funct
     try { $gw->charge($req3); } catch (\Froshly\Parakit\Exceptions\GatewayUnavailableException) { $caught = true; }
 
     expect($caught)->toBeTrue()->and($gw->calls)->toBe(2);
+});
+
+it('does not count deterministic rejections toward the circuit breaker', function () {
+    config()->set('parakit.reliability.circuit_breaker.failure_threshold', 1);
+
+    $gw = new class('deterministic', []) extends AbstractGateway {
+        public int $calls = 0;
+
+        protected function performCharge(PaymentRequest $r): PaymentResponse
+        {
+            $this->calls++;
+            throw new InvalidArgumentException('invalid currency');
+        }
+
+        public function handleWebhook(Request $r): WebhookPayload
+        {
+            throw new RuntimeException('n/a');
+        }
+    };
+
+    foreach (['deterministic-1', 'deterministic-2'] as $key) {
+        expect(fn () => $gw->charge(new PaymentRequest(
+            reference: $key,
+            amount: 1,
+            currency: Currency::IQD,
+            description: 'd',
+            idempotencyKey: $key,
+        )))->toThrow(InvalidArgumentException::class);
+    }
+
+    expect($gw->calls)->toBe(2);
 });
 
 it('writes an audit-trail PaymentLog row on a successful charge', function () {

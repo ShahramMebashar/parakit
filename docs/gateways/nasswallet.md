@@ -97,7 +97,8 @@ Nass Wallet callbacks carry **no signature**. `handleWebhook()` reads only `data
   Set the matching `portal_url` too (the UAT portal is `uatcheckout1.nasswallet.com`).
 - **IQD only.** `charge()` throws `InvalidArgumentException` for any currency other than `IQD`, rather than silently settling in IQD.
 - **Amount units.** The charge sends the amount as a 2-decimal string built straight from the integer you pass to `amount()`. For `IQD` the minor-unit factor is 1, so `amount(25_000, Currency::IQD)` sends `25000.00`.
-- **Token TTL.** The login token's cache lifetime comes from Nass Wallet's `accessTokenExpiry` (epoch milliseconds), minus a 60s safety margin, with a 30s floor. If that field is missing the token is cached for 300s. On an HTTP `401` the client drops the token, re-logs in, and retries once.
-- **Success signal.** Nass Wallet returns `errCode` `"1"` even on success — it is ignored. Success is `responseCode` `0`; anything else is a non-retryable rejection.
+- **Token TTL.** The login token's cache lifetime comes from Nass Wallet's `accessTokenExpiry` (epoch milliseconds), minus a 60s safety margin, with a 1s minimum. If that field is missing the token is cached for 300s. On an HTTP `401` the client drops the token, re-logs in, and retries once.
+- **Success signal.** Nass Wallet returns `errCode` `"1"` even on success — it is ignored. Success is numeric `responseCode` `0` (integer or numeric string); anything else is a non-retryable rejection.
+- **Status amount fallback.** Some `checkTransaction` responses omit the amount. Parakit uses the stored transaction amount in that shape so status checks and amount-verification webhooks do not incorrectly report zero.
 - **Status mapping.** `transactionStatus` `SUCCESS` maps to `Paid` and `FAILED` to `Failed`. Any other value logs `parakit.nasswallet.unknown_status` and is treated as `Pending`.
 - **Idempotency.** The `orderId` is derived from the stable idempotency key (sha256 → first 60 bits as a numeric string), so a retried charge re-sends the same `orderId` and never double-creates a transaction. Free-text caller keys are folded through `IdempotencyKey::forGateway` first.

@@ -65,7 +65,9 @@ final class NassWalletClient
         // 4xx and an explicit non-zero responseCode are deterministic — throw a
         // non-retryable PaymentException so the retry loop never re-issues a
         // request that will fail identically.
-        if (!$response->successful() || ($json['responseCode'] ?? null) !== 0) {
+        $responseCode = $json['responseCode'] ?? null;
+        $providerSucceeded = is_numeric($responseCode) && (int) $responseCode === 0;
+        if (!$response->successful() || ! $providerSucceeded) {
             $message = is_string($json['message'] ?? null)
                 ? $json['message']
                 : "HTTP {$response->status()}";

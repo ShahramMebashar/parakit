@@ -68,7 +68,7 @@ Extend it and you get:
   persisted *before* the gateway call, so a crash or a racing webhook still has
   a row to land on.
 - **Retries with backoff** — transient failures (`GatewayUnavailableException`)
-  are retried per `parakit.reliability.retry`.
+  are retried per `parakit.reliability.retry` unless the driver disables them.
 - **A circuit breaker** — keyed by your gateway name; `charge()` throws
   `GatewayUnavailableException` while the breaker is open.
 - **The `PaymentInitiated` event**, fired exactly once per `charge()` call.
@@ -86,9 +86,20 @@ abstract public function handleWebhook(Request $request): WebhookPayload;
 ::: warning
 Throw `GatewayUnavailableException` from `performCharge()` only for genuinely
 transient failures (timeouts, 5xx, network errors). It is the one exception the
-retry loop catches. Any other `Throwable` marks the transaction failed and
-propagates immediately — no retry.
+retry loop catches. Exhausted transient failures leave the transaction
+`Pending`, because the provider outcome may be unknown. Any other `Throwable`
+marks the transaction failed and propagates immediately.
 :::
+
+If the provider cannot accept a stable merchant request ID and cannot reconcile
+an ambiguous create, disable retries:
+
+```php
+protected function retryChargeOnTransientFailure(): bool
+{
+    return false;
+}
+```
 
 ## Skeleton
 

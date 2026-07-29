@@ -7,6 +7,7 @@ use Froshly\Parakit\Facades\Payment;
 use Froshly\Parakit\DTOs\PaymentRequest;
 use Froshly\Parakit\Enums\Currency;
 use Froshly\Parakit\Enums\PaymentStatus;
+use Froshly\Parakit\Models\PaymentTransaction;
 
 beforeEach(function () {
     Cache::flush();
@@ -96,19 +97,53 @@ it('truncates the description to FIB\'s 50-character limit', function () {
         && strlen($req['description']) === 50);
 });
 
-it('converts minor units to major-unit decimal when charging in USD', function () {
+it('rejects non-IQD charges before contacting FIB', function () {
     Http::fake([
         '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 600]),
         '*/protected/v1/payments' => Http::response(['paymentId' => 'pid_usd'], 200),
     ]);
 
-    Payment::driver('fib')->charge(new PaymentRequest(
+    expect(fn () => Payment::driver('fib')->charge(new PaymentRequest(
         reference: 'ord_usd', amount: 5000, currency: Currency::USD, description: 'Order USD',
+    )))->toThrow(InvalidArgumentException::class);
+
+    Http::assertNotSent(fn ($req) => str_contains($req->url(), '/protected/v1/payments'));
+});
+
+it('omits statusCallbackUrl when no callback is configured', function () {
+    config()->set('parakit.gateways.fib.callback_url', '');
+    Http::fake([
+        '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 600]),
+        '*/protected/v1/payments' => Http::response(['paymentId' => 'pid_no_callback'], 202),
+    ]);
+
+    Payment::driver('fib')->charge(new PaymentRequest(
+        reference: 'ord_no_callback', amount: 5000, currency: Currency::IQD, description: 'Order',
     ));
 
-    // 5000 minor USD == $50.00 major. Without conversion FIB would charge $5000.
     Http::assertSent(fn ($req) =>
-        str_contains($req->url(), '/protected/v1/payments')
-        && $req['monetaryValue']['amount'] === '50.00'
-        && $req['monetaryValue']['currency'] === 'USD');
+        str_ends_with($req->url(), '/protected/v1/payments')
+        && ! array_key_exists('statusCallbackUrl', $req->data()));
+});
+
+it('does not retry an uncertain FIB create and leaves the transaction pending', function () {
+    config()->set('parakit.reliability.retry.max_attempts', 3);
+    Http::fake([
+        '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 600]),
+        '*/protected/v1/payments' => Http::sequence()
+            ->push('unavailable', 503)
+            ->push(['paymentId' => 'duplicate-risk'], 202),
+    ]);
+
+    expect(fn () => Payment::driver('fib')->charge(new PaymentRequest(
+        reference: 'ord_uncertain', amount: 5000, currency: Currency::IQD, description: 'Order',
+        idempotencyKey: 'fib-uncertain',
+    )))->toThrow(\Froshly\Parakit\Exceptions\GatewayUnavailableException::class);
+
+    $calls = collect(Http::recorded())
+        ->filter(fn ($pair) => str_ends_with($pair[0]->url(), '/protected/v1/payments'))
+        ->count();
+    expect($calls)->toBe(1)
+        ->and(PaymentTransaction::where('idempotency_key', 'fib-uncertain')->value('status'))
+        ->toBe(PaymentStatus::Pending);
 });

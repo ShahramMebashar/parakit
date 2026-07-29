@@ -9,6 +9,7 @@ use InvalidArgumentException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Ramsey\Uuid\Uuid;
 use Froshly\Parakit\Contracts\SupportsCancel;
 use Froshly\Parakit\Contracts\SupportsRefund;
 use Froshly\Parakit\Contracts\SupportsStatusCheck;
@@ -54,7 +55,7 @@ final class QiCardGateway extends AbstractGateway implements SupportsStatusCheck
 
         $body = [
             'requestId'        => $this->deriveRequestId($request),
-            'amount'           => $this->amountString($request->amount),
+            'amount'           => $request->amount,
             'currency'         => $request->currency->value,
             'finishPaymentUrl' => $request->returnUrl ?? (string) ($this->config['finish_payment_url'] ?? ''),
             'notificationUrl'  => $request->callbackUrl ?? (string) ($this->config['notification_url'] ?? ''),
@@ -74,7 +75,9 @@ final class QiCardGateway extends AbstractGateway implements SupportsStatusCheck
         if ($request->metadata !== []) {
             $info = [];
             foreach ($request->metadata as $k => $v) {
-                $info[(string) $k] = is_scalar($v) ? (string) $v : json_encode($v);
+                $info[(string) $k] = is_scalar($v)
+                    ? (string) $v
+                    : json_encode($v, JSON_THROW_ON_ERROR);
                 if (count($info) >= 10) {
                     break;
                 }
@@ -82,7 +85,14 @@ final class QiCardGateway extends AbstractGateway implements SupportsStatusCheck
             $body['additionalInfo'] = $info;
         }
 
-        $raw = $this->client->createPayment($body);
+        try {
+            $raw = $this->client->createPayment($body);
+        } catch (QiCardApiException $e) {
+            if (! in_array($e->apiCode, [1, 10], true)) {
+                throw $e;
+            }
+            $raw = $this->client->getStatusByRequestId((string) $body['requestId']);
+        }
 
         $paymentId = (string) ($raw['paymentId'] ?? '');
         if ($paymentId === '') {
@@ -162,12 +172,19 @@ final class QiCardGateway extends AbstractGateway implements SupportsStatusCheck
     {
         // Keyed refunds reuse the same QiCard requestId; unkeyed remain unique per call.
         $requestId = $request->idempotencyKey !== null
-            ? IdempotencyKey::gatewayHexPrefixForOperation($this->name(), 'refund', $request->idempotencyKey, 36)
+            ? Uuid::uuid5(
+                Uuid::NAMESPACE_URL,
+                'parakit:qicard:refund:' . IdempotencyKey::forGatewayOperation(
+                    $this->name(),
+                    'refund',
+                    $request->idempotencyKey,
+                ),
+            )->toString()
             : $this->newRequestId();
 
         $body = [
             'requestId' => $requestId,
-            'amount'    => $this->amountString($request->amount),
+            'amount'    => $request->amount,
         ];
         if ($request->reason !== null && $request->reason !== '') {
             $body['message'] = $request->reason;
@@ -202,6 +219,11 @@ final class QiCardGateway extends AbstractGateway implements SupportsStatusCheck
                     rawMessage: (string) ($details['resultDescription'] ?? 'QiCard refund failed'),
                 ),
                 raw: $raw,
+            );
+        }
+        if ($outcome === null) {
+            throw new GatewayUnavailableException(
+                'QiCard refund is still processing; outcome is not terminal'
             );
         }
 
@@ -317,19 +339,16 @@ final class QiCardGateway extends AbstractGateway implements SupportsStatusCheck
     /** QiCard requestId is capped at 36 chars and must be stable across charge retries. */
     private function deriveRequestId(PaymentRequest $request): string
     {
-        return IdempotencyKey::gatewayHexPrefixForRequest($this->name(), $request, 36);
+        return Uuid::uuid5(
+            Uuid::NAMESPACE_URL,
+            'parakit:qicard:charge:' . IdempotencyKey::localForRequest($this->name(), $request),
+        )->toString();
     }
 
     /** Each non-idempotent call (cancel/refund) requires a unique 36-char requestId. */
     private function newRequestId(): string
     {
         return Str::uuid()->toString();
-    }
-
-    /** REST bodies use 2 decimals; the webhook signature canonical string uses 3 (see QiCardSignatureVerifier). */
-    private function amountString(int $minor): string
-    {
-        return number_format($minor, 2, '.', '');
     }
 
     /** @return array<string, string> */

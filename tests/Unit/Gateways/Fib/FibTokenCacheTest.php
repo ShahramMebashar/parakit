@@ -67,3 +67,9 @@ it('throws a non-retryable FibApiException on token endpoint 4xx (bad credential
     $cache = new FibTokenCache('https://fib.stage.fib.iq', 'cid', 'csecret');
     $cache->token();
 })->throws(\Froshly\Parakit\Gateways\Fib\FibApiException::class);
+
+it('rejects a successful token response without an access_token', function () {
+    Http::fake(['*/protocol/openid-connect/token' => Http::response(['expires_in' => 60], 200)]);
+
+    (new FibTokenCache('https://fib.stage.fib.iq', 'cid', 'csecret'))->token();
+})->throws(\Froshly\Parakit\Gateways\Fib\FibApiException::class, 'no access_token');

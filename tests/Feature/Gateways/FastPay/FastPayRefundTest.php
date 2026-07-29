@@ -15,7 +15,7 @@ beforeEach(function () {
     $this->artisan('migrate');
     config()->set('parakit.gateways.fastpay', [
         'driver'            => 'fastpay',
-        'base_url'          => 'https://staging-pgw.fast-pay.iq',
+        'base_url'          => 'https://staging-apigw-merchant.fast-pay.iq',
         'store_id'          => 'STORE-1',
         'store_password'    => 'secret-1',
         'refund_secret_key' => 'refund-key-1',
@@ -175,4 +175,29 @@ it('returns a failed RefundResponse when FastPay reports the transaction already
     expect($r->success)->toBeFalse()
         ->and($r->refundId)->toBeNull()
         ->and($r->error?->code)->toBe(PaymentErrorCode::DuplicateTransaction);
+});
+
+it('preserves a keyed refund claim when the remote outcome is transiently unknown', function () {
+    Http::fake([
+        '*/api/v1/public/pgw/payment/validate' => fakeFastPayValidate(),
+        '*/api/v1/public/pgw/payment/refund' => Http::response('unavailable', 503),
+    ]);
+
+    $request = new RefundRequest(
+        transactionId: 'ORD12345678',
+        amount: 5000,
+        idempotencyKey: 'rfk-timeout',
+    );
+
+    expect(fn () => Payment::driver('fastpay')->refund($request))
+        ->toThrow(GatewayUnavailableException::class);
+
+    expect(PaymentRefund::first()->status)->toBe('pending');
+    expect(fn () => Payment::driver('fastpay')->refund($request))
+        ->toThrow(GatewayUnavailableException::class, 'already pending');
+
+    $refundCalls = collect(Http::recorded())
+        ->filter(fn ($pair) => str_contains($pair[0]->url(), '/payment/refund'))
+        ->count();
+    expect($refundCalls)->toBe(1);
 });

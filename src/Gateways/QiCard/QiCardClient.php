@@ -41,6 +41,12 @@ final class QiCardClient
         return $this->getJson('/api/v1/payment/' . rawurlencode($paymentId) . '/status');
     }
 
+    /** @return array<string, mixed> */
+    public function getStatusByRequestId(string $requestId): array
+    {
+        return $this->getJson('/api/v1/payment/status/by/request/' . rawurlencode($requestId));
+    }
+
     /** @param array<string, mixed> $body @return array<string, mixed> */
     public function cancel(string $paymentId, array $body): array
     {

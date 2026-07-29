@@ -125,7 +125,8 @@ See [Refunds](/guides/refunds) for the shared refund workflow.
 
 - **UAT vs production host.** `ZAINCASH_BASE_URL` defaults to the UAT host `https://pg-api-uat.zaincash.iq`. Set the production host explicitly before going live.
 - **Two separate secrets.** `client_secret` authenticates the OAuth2 token endpoint; `api_key` verifies inbound callback JWTs. They are different values — do not swap them.
-- **IQD only.** ZainCash always settles in Iraqi dinars. The gateway forces `Currency::IQD` on both the charge payload and the response regardless of what currency you pass — pass `Currency::IQD` to avoid confusion.
+- **IQD only.** ZainCash always settles in Iraqi dinars. Passing another currency throws `InvalidArgumentException` before the OAuth or payment endpoints are contacted.
+- **Duplicate external references.** Charge retries reuse a deterministic UUID `externalReferenceId`. When ZainCash reports that reference as already existing and includes its `transactionId`, parakit follows the documented inquiry flow instead of creating another transaction.
 - **Refunds are all-or-nothing.** Partial refunds are rejected before the gateway is contacted. See the refund warning above.
 - **Language codes.** `lang` is normalised to `En` / `Ar` / `Ku`. The v2 docs are inconsistent on casing — if UAT rejects the title-cased value, raise it with ZainCash.
 - **Unknown status strings.** If ZainCash introduces a status parakit does not recognise, it logs `parakit.zaincash.unknown_status` and falls back to `Pending`. Watch your logs for that warning after ZainCash API changes.

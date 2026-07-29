@@ -13,7 +13,7 @@ beforeEach(function () {
     $this->artisan('migrate');
     config()->set('parakit.gateways.fastpay', [
         'driver'            => 'fastpay',
-        'base_url'          => 'https://staging-pgw.fast-pay.iq',
+        'base_url'          => 'https://staging-apigw-merchant.fast-pay.iq',
         'store_id'          => 'STORE-1',
         'store_password'    => 'secret-1',
         'refund_secret_key' => 'refund-key-1',

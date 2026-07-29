@@ -16,7 +16,7 @@ php artisan parakit:install
 ## Requirements
 
 - PHP `^8.2`
-- Laravel 11, 12, or 13
+- Laravel 12 or 13
 
 ## What `parakit:install` does
 

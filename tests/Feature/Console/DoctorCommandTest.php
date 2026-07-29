@@ -105,7 +105,7 @@ it('validates required config for NassWallet, including the Basic token', functi
 it('validates required config for FastPay', function () {
     config()->set('parakit.gateways.fastpay', [
         'driver' => 'fastpay',
-        'base_url' => 'https://staging-pgw.fast-pay.iq',
+        'base_url' => 'https://staging-apigw-merchant.fast-pay.iq',
         'store_id' => 'STORE-1',
         'store_password' => 'secret',
         'callback_url' => 'https://app.test/payments/webhooks/fastpay',

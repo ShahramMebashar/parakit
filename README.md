@@ -66,7 +66,7 @@ NASSWALLET_PASSWORD=your-nasswallet-password
 NASSWALLET_TRANSACTION_PIN=your-transaction-pin
 NASSWALLET_CALLBACK_URL=https://yourapp.com/payments/webhooks/nasswallet
 
-FASTPAY_BASE_URL=https://staging-pgw.fast-pay.iq
+FASTPAY_BASE_URL=https://staging-apigw-merchant.fast-pay.iq
 FASTPAY_STORE_ID=your-store-id
 FASTPAY_STORE_PASSWORD=your-store-password
 FASTPAY_REFUND_SECRET_KEY=your-refund-secret-key
@@ -326,7 +326,7 @@ Report vulnerabilities privately via **GitHub Security Advisories** on this repo
 
 ## Versioning
 
-Semantic versioning. v0.1 is alpha — public API may still shift before v1.0. Subsequent releases will lock the API and follow `^11.0 || ^12.0` for Laravel.
+Parakit follows semantic versioning. Starting with v1.0, public API compatibility is preserved within each major release. Laravel support follows the constraints declared in `composer.json`.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full history.
 

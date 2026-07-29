@@ -15,6 +15,7 @@ use Froshly\Parakit\Enums\Currency;
 use Froshly\Parakit\Enums\PaymentStatus;
 use Froshly\Parakit\Exceptions\GatewayUnavailableException;
 use Froshly\Parakit\Gateways\AbstractGateway;
+use Froshly\Parakit\Models\PaymentTransaction;
 use Froshly\Parakit\Support\IdempotencyKey;
 use Froshly\Parakit\Support\Money;
 
@@ -84,7 +85,7 @@ final class NassWalletGateway extends AbstractGateway implements SupportsStatusC
     public function status(string $gatewayTransactionId): PaymentResponse
     {
         $raw = $this->client->checkTransaction($gatewayTransactionId);
-        [$status, $amount] = $this->parseCheckTransaction($raw);
+        [$status, $amount] = $this->parseCheckTransaction($raw, $gatewayTransactionId);
 
         return new PaymentResponse(
             success: $status->isSuccessful() || $status === PaymentStatus::Pending,
@@ -117,7 +118,7 @@ final class NassWalletGateway extends AbstractGateway implements SupportsStatusC
             );
         }
 
-        [$status, $amount] = $this->parseCheckTransaction($raw);
+        [$status, $amount] = $this->parseCheckTransaction($raw, $initTransactionId);
 
         return new WebhookPayload(
             gateway: $this->name(),
@@ -138,12 +139,12 @@ final class NassWalletGateway extends AbstractGateway implements SupportsStatusC
      * @param array<string, mixed> $raw
      * @return array{0: PaymentStatus, 1: int}
      */
-    private function parseCheckTransaction(array $raw): array
+    private function parseCheckTransaction(array $raw, string $gatewayTransactionId): array
     {
         $data = (array) ($raw['data'] ?? []);
 
         $statusText = $data['transactionStatus'] ?? null;
-        $amountText = null;
+        $amountText = $data['amount'] ?? null;
 
         if (!is_string($statusText)) {
             $history = (array) ($data['TransactionHistoryList'] ?? []);
@@ -154,11 +155,24 @@ final class NassWalletGateway extends AbstractGateway implements SupportsStatusC
 
         $status = NassWalletStatusMap::toStatus((string) $statusText);
 
-        $amount = is_string($amountText) && preg_match('/^\d+(\.\d+)?$/', $amountText) === 1
-            ? Money::parse($amountText, Currency::IQD)
-            : 0;
+        $amountString = is_int($amountText) || is_float($amountText)
+            ? (string) $amountText
+            : $amountText;
+        $amount = is_string($amountString) && preg_match('/^\d+(\.\d+)?$/', $amountString) === 1
+            ? Money::parse($amountString, Currency::IQD)
+            : $this->storedAmount($gatewayTransactionId);
 
         return [$status, $amount];
+    }
+
+    private function storedAmount(string $gatewayTransactionId): int
+    {
+        $amount = PaymentTransaction::query()
+            ->where('gateway', $this->name())
+            ->where('gateway_transaction_id', $gatewayTransactionId)
+            ->value('amount');
+
+        return is_numeric($amount) ? (int) $amount : 0;
     }
 
     private function redirectUrl(string $transactionId, string $token): string

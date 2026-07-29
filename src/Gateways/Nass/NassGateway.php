@@ -45,13 +45,18 @@ final class NassGateway extends AbstractGateway implements SupportsStatusCheck
         $payload = [
             'orderId' => $orderId,
             'orderDesc' => $request->description,
-            // NassPay expects amount in MAJOR units as a string.
-            'amount' => Money::format($request->amount, $request->currency),
+            // The live OpenAPI schema requires a JSON number in major units.
+            'amount' => $request->currency->minorUnitFactor() === 1
+                ? $request->amount
+                : (float) Money::format($request->amount, $request->currency),
             'currency' => NassCurrencyMap::toCode($request->currency),
-            'transactionType' => (int) ($this->config['transaction_type'] ?? 1),
+            'transactionType' => (string) ($this->config['transaction_type'] ?? '1'),
             'backRef' => $request->returnUrl ?? (string) ($this->config['return_url'] ?? ''),
             'notifyUrl' => $request->callbackUrl ?? (string) ($this->config['callback_url'] ?? ''),
         ];
+        if ($request->customerEmail !== null && $request->customerEmail !== '') {
+            $payload['cardHolderEmail'] = $request->customerEmail;
+        }
 
         $raw = $this->client->initTransaction($payload);
         $data = (array) ($raw['data'] ?? []);

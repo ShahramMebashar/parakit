@@ -5,10 +5,29 @@ namespace Froshly\Parakit\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Froshly\Parakit\Enums\Currency;
 use Froshly\Parakit\Enums\PaymentStatus;
 use Froshly\Parakit\Exceptions\IllegalStateTransitionException;
 
+/**
+ * @property string $id
+ * @property string $gateway
+ * @property string $reference
+ * @property string|null $gateway_transaction_id
+ * @property PaymentStatus $status
+ * @property int $amount
+ * @property Currency $currency
+ * @property int $refunded_amount
+ * @property string|null $idempotency_key
+ * @property string $correlation_id
+ * @property array<string, mixed>|null $metadata
+ * @property array<string, mixed>|null $last_raw_response
+ * @property Carbon|null $expires_at
+ * @property Carbon|null $paid_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
 class PaymentTransaction extends Model
 {
     use HasUlids;

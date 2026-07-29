@@ -20,6 +20,10 @@ beforeEach(function () {
 it('refunds a transaction and reports success', function () {
     Http::fake([
         '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 600]),
+        '*/protected/v1/payments/*/status' => Http::response([
+            'status' => 'PAID',
+            'amount' => ['amount' => '5000', 'currency' => 'IQD'],
+        ], 200),
         '*/protected/v1/payments/*/refund' => Http::response(['refundId' => 'rf_1'], 200),
     ]);
 

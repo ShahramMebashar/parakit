@@ -168,7 +168,7 @@ breaker work.
 
 ## Registering a listener class
 
-For anything beyond a closure, use a dedicated listener class. In Laravel 11+,
+For anything beyond a closure, use a dedicated listener class. In Laravel 12+,
 event-to-listener wiring is discovered automatically — type-hint the event in
 the listener's `handle()` method:
 

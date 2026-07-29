@@ -48,20 +48,34 @@ final class ZainCashTokenCache
                 'scope' => $this->scope,
             ]);
 
-        if (!$response->successful()) {
+        if ($response->status() >= 500) {
             throw new GatewayUnavailableException(
                 "ZainCash token endpoint returned {$response->status()}"
             );
         }
+        if (!$response->successful()) {
+            throw new ZainCashApiException(
+                "ZainCash token endpoint rejected: HTTP {$response->status()}",
+                $response->status(),
+            );
+        }
 
         $token = (string) $response->json('access_token');
+        if ($token === '') {
+            throw new ZainCashApiException(
+                'ZainCash token endpoint returned no access_token',
+                $response->status(),
+            );
+        }
         $expiresIn = (int) $response->json('expires_in', 600);
-        // Never let the TTL hit 0 or below (which means "delete now" / "forever"
-        // depending on the cache store). 30s minimum keeps a burst-protection
-        // window even if ZainCash hands us very short-lived tokens.
-        $ttl = max(30, $expiresIn - self::SAFETY_MARGIN);
+        $ttl = max(1, $expiresIn - self::SAFETY_MARGIN);
         Cache::put($this->cacheKey, $token, $ttl);
 
         return $token;
+    }
+
+    public function forget(): void
+    {
+        Cache::forget($this->cacheKey);
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Http;
 use Froshly\Parakit\Gateways\ZainCash\ZainCashClient;
 use Froshly\Parakit\Gateways\ZainCash\ZainCashTokenCache;
 use Froshly\Parakit\Exceptions\GatewayUnavailableException;
+use Froshly\Parakit\Gateways\ZainCash\ZainCashApiException;
 
 beforeEach(fn () => Cache::flush());
 
@@ -65,3 +66,32 @@ it('throws GatewayUnavailableException on a non-2xx response', function () {
 
     zcClient()->init(['orderId' => 'ord_1']);
 })->throws(GatewayUnavailableException::class);
+
+it('throws a non-retryable API exception on a deterministic 4xx', function () {
+    Http::fake([
+        '*/oauth2/token' => Http::response(['access_token' => 'tok_1', 'expires_in' => 600]),
+        '*/transaction/init' => Http::response([
+            'code' => 'INVALID_REQUEST',
+            'message' => 'amount is invalid',
+        ], 400),
+    ]);
+
+    zcClient()->init(['orderId' => 'ord_1']);
+})->throws(ZainCashApiException::class, 'amount is invalid');
+
+it('refreshes a stale token once after a 401', function () {
+    Http::fake([
+        '*/oauth2/token' => Http::sequence()
+            ->push(['access_token' => 'stale', 'expires_in' => 600], 200)
+            ->push(['access_token' => 'fresh', 'expires_in' => 600], 200),
+        '*/transaction/init' => Http::sequence()
+            ->push(['message' => 'expired token'], 401)
+            ->push(['redirectUrl' => 'https://pay/x'], 200),
+    ]);
+
+    expect(zcClient()->init(['orderId' => 'ord_1'])['redirectUrl'])->toBe('https://pay/x');
+
+    Http::assertSent(fn ($request) =>
+        str_contains($request->url(), '/transaction/init')
+        && $request->hasHeader('Authorization', 'Bearer fresh'));
+});

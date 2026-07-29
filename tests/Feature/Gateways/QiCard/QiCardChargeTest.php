@@ -60,13 +60,12 @@ it('sanitises a user-supplied idempotencyKey before deriving requestId', functio
             return true;
         }
         $rid = (string) $req['requestId'];
-        // Must not leak the raw user string into the gateway request and must
-        // produce a 36-char hex digest (QiCard's max-length constraint).
-        return $rid !== 'order:123' && strlen($rid) === 36 && ctype_xdigit($rid);
+        return $rid !== 'order:123'
+            && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/', $rid) === 1;
     });
 });
 
-it('sends Basic Auth, X-Terminal-Id header, a ≤36 char requestId and a 2-decimal amount', function () {
+it('sends Basic Auth, X-Terminal-Id, a UUID requestId and a numeric amount', function () {
     fakeQiCardCreate();
 
     Payment::driver('qicard')->charge(new PaymentRequest(
@@ -83,12 +82,31 @@ it('sends Basic Auth, X-Terminal-Id header, a ≤36 char requestId and a 2-decim
             && base64_decode(substr($auth, 6)) === 'paymentgatewaytest:WHaNFE5C3qlChqNbAzH4'
             && $terminal === '237984'
             && is_string($body['requestId']) && strlen($body['requestId']) <= 36 && $body['requestId'] !== ''
-            && $body['amount'] === '5000.00'
+            && $body['amount'] === 5000
             && $body['currency'] === 'IQD'
             && $body['locale'] === 'en_US'
             && $body['finishPaymentUrl'] === 'https://app.test/finish'
             && $body['notificationUrl'] === 'https://app.test/payments/webhooks/qicard';
     });
+});
+
+it('reconciles a duplicate create through status-by-requestId', function () {
+    $fixture = json_decode(file_get_contents(__DIR__ . '/../../../Fixtures/QiCard/create_payment_success.json'), true);
+    Http::fake([
+        '*/api/v1/payment' => Http::response([
+            'error' => ['code' => 10, 'message' => 'PAYMENT_ALREADY_EXISTS'],
+        ], 400),
+        '*/api/v1/payment/status/by/request/*' => Http::response($fixture, 200),
+    ]);
+
+    $response = Payment::driver('qicard')->charge(new PaymentRequest(
+        reference: 'INV-DUPLICATE', amount: 5000, currency: Currency::IQD, description: 'Order',
+    ));
+
+    expect($response->gatewayTransactionId)->toBe('f2bb43a8-488a-4281-977b-5b3418fc3c67');
+    Http::assertSent(fn ($req) =>
+        $req->method() === 'GET'
+        && str_contains($req->url(), '/payment/status/by/request/'));
 });
 
 it('keeps the same requestId across HTTP retries within one charge', function () {

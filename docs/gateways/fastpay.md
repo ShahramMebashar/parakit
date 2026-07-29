@@ -12,7 +12,7 @@ Every key below lives under `gateways.fastpay` in `config/parakit.php`.
 
 | Config key | Env var | Default | Required | What it is |
 | --- | --- | --- | --- | --- |
-| `base_url` | `FASTPAY_BASE_URL` | `https://staging-pgw.fast-pay.iq` | No | FastPay API host. Switch to the production host FastPay gives you when you go live. |
+| `base_url` | `FASTPAY_BASE_URL` | `https://staging-apigw-merchant.fast-pay.iq` | No | FastPay merchant API host. Production uses `https://apigw-merchant.fast-pay.iq`. |
 | `store_id` | `FASTPAY_STORE_ID` | — | Yes | Merchant store identifier. Sent in the body of every API call. Issued by FastPay. |
 | `store_password` | `FASTPAY_STORE_PASSWORD` | — | Yes | Merchant store password. FastPay has no OAuth — `store_id` + `store_password` authenticate every request. |
 | `refund_secret_key` | `FASTPAY_REFUND_SECRET_KEY` | — | Only for refunds | A separate secret used solely on the refund call. Required if you intend to refund; not used for charges. Issued by FastPay. |
@@ -23,7 +23,7 @@ Every key below lives under `gateways.fastpay` in `config/parakit.php`.
 ## `.env` example
 
 ```env
-FASTPAY_BASE_URL=https://staging-pgw.fast-pay.iq
+FASTPAY_BASE_URL=https://staging-apigw-merchant.fast-pay.iq
 FASTPAY_STORE_ID=your-store-id
 FASTPAY_STORE_PASSWORD=your-store-password
 FASTPAY_REFUND_SECRET_KEY=your-refund-secret-key

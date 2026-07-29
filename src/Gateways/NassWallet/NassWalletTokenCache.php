@@ -3,8 +3,10 @@ declare(strict_types=1);
 
 namespace Froshly\Parakit\Gateways\NassWallet;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Froshly\Parakit\Exceptions\GatewayTimeoutException;
 use Froshly\Parakit\Exceptions\GatewayUnavailableException;
 use Froshly\Parakit\Exceptions\PaymentException;
 
@@ -52,17 +54,28 @@ final class NassWalletTokenCache
 
     private function login(): string
     {
-        $response = Http::acceptJson()
-            ->asJson()
-            ->withHeaders(['Authorization' => 'Basic ' . $this->basicToken])
-            ->timeout((int) config('parakit.reliability.timeout_seconds', 15))
-            ->post($this->baseUrl . '/login', [
-                'data' => [
-                    'username' => $this->username,
-                    'password' => $this->password,
-                    'grantType' => 'password',
-                ],
-            ]);
+        $uri = '/login';
+        $start = hrtime(true);
+        try {
+            $response = Http::acceptJson()
+                ->asJson()
+                ->withHeaders(['Authorization' => 'Basic ' . $this->basicToken])
+                ->timeout((int) config('parakit.reliability.timeout_seconds', 15))
+                ->post($this->baseUrl . $uri, [
+                    'data' => [
+                        'username' => $this->username,
+                        'password' => $this->password,
+                        'grantType' => 'password',
+                    ],
+                ]);
+        } catch (ConnectionException $e) {
+            throw new GatewayTimeoutException(
+                $uri,
+                (int) ((hrtime(true) - $start) / 1_000_000),
+                "NassWallet login timed out: {$e->getMessage()}",
+                $e,
+            );
+        }
 
         // 5xx is transient — let the caller's retry layer handle it.
         if ($response->status() >= 500) {
@@ -76,7 +89,9 @@ final class NassWalletTokenCache
 
         // Success is responseCode 0 — errCode is "1" even on success, so it
         // cannot be used as the success signal.
-        if (!$response->successful() || ($json['responseCode'] ?? null) !== 0) {
+        $responseCode = $json['responseCode'] ?? null;
+        $providerSucceeded = is_numeric($responseCode) && (int) $responseCode === 0;
+        if (!$response->successful() || ! $providerSucceeded) {
             $message = is_string($json['message'] ?? null) ? $json['message'] : "HTTP {$response->status()}";
             throw new PaymentException("NassWallet login failed: {$message}");
         }
@@ -103,6 +118,6 @@ final class NassWalletTokenCache
             return 300;
         }
 
-        return max(30, intdiv($expiryMs, 1000) - time() - self::SAFETY_MARGIN);
+        return max(1, intdiv($expiryMs, 1000) - time() - self::SAFETY_MARGIN);
     }
 }
