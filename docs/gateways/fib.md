@@ -42,8 +42,8 @@ Charge a customer through the `Payment` facade. FIB amounts in `IQD` are whole d
 use Froshly\Parakit\Facades\Payment;
 use Froshly\Parakit\Enums\Currency;
 
-$response = Payment::driver('fib')
-    ->for($order)
+$response = Payment::for($order)
+    ->driver('fib')
     ->amount(25000, Currency::IQD)
     ->description('Order #'.$order->id)
     ->charge();

@@ -40,8 +40,8 @@ Charge an order:
 use Froshly\Parakit\Facades\Payment;
 use Froshly\Parakit\Enums\Currency;
 
-$response = Payment::driver('fastpay')
-    ->for($order)
+$response = Payment::for($order)
+    ->driver('fastpay')
     ->amount(25_000, Currency::IQD)   // 25,000 IQD — FastPay settles IQD only
     ->description('Order #1042')
     ->charge();

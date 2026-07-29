@@ -40,8 +40,8 @@ Charge an order:
 use Froshly\Parakit\Facades\Payment;
 use Froshly\Parakit\Enums\Currency;
 
-$response = Payment::driver('nass')
-    ->for($order)
+$response = Payment::for($order)
+    ->driver('nass')
     ->amount(25_000, Currency::IQD)   // 25,000 IQD — IQD is whole dinars
     ->description('Order #1042')
     ->charge();

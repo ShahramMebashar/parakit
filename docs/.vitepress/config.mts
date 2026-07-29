@@ -22,6 +22,7 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Guide', link: '/introduction', activeMatch: '^/(introduction|installation|configuration|guides)' },
+      { text: 'Tutorials', link: '/tutorials/orders-and-wallet-deposits', activeMatch: '^/tutorials/' },
       { text: 'Gateways', link: '/gateways/fib', activeMatch: '^/gateways/' },
       { text: 'Reference', link: '/reference/commands', activeMatch: '^/reference/' },
       {
@@ -50,6 +51,12 @@ export default defineConfig({
           { text: 'Refunds', link: '/guides/refunds' },
           { text: 'Receipts', link: '/guides/receipts' },
           { text: 'Reliability', link: '/guides/reliability' },
+        ],
+      },
+      {
+        text: 'Tutorials',
+        items: [
+          { text: 'Orders and wallet deposits', link: '/tutorials/orders-and-wallet-deposits' },
         ],
       },
       {

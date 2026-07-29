@@ -40,8 +40,8 @@ Charge an order:
 use Froshly\Parakit\Facades\Payment;
 use Froshly\Parakit\Enums\Currency;
 
-$response = Payment::driver('nasswallet')
-    ->for($order)
+$response = Payment::for($order)
+    ->driver('nasswallet')
     ->amount(25_000, Currency::IQD)   // 25,000 IQD — Nass Wallet settles IQD only
     ->description('Order #1042')
     ->charge();

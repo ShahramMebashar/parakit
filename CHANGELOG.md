@@ -4,9 +4,13 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 
 ## [Unreleased]
 
+### Added
+- Added an FIB-based tutorial for handling order payments and application-wallet deposits with namespaced references, lifecycle events, and idempotent wallet credits.
+
 ### Fixed
 - Updated the v1 documentation for Packagist installation, migration tables, site navigation, and FastPay order-id derivation.
 - Replaced the pre-v1 security policy with accurate support, webhook trust, redaction, and deployment boundaries.
+- Corrected the fluent payment-builder call order in every gateway guide.
 
 ## [1.0.0] — 2026-07-29
 
