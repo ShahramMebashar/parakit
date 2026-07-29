@@ -4,6 +4,10 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-07-29
+
+Documentation corrections and additions for the v1 release.
+
 ### Added
 - Added an FIB-based tutorial for handling order payments and application-wallet deposits with namespaced references, lifecycle events, and idempotent wallet credits.
 
