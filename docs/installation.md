@@ -25,11 +25,12 @@ The command runs three steps:
 1. Publishes `config/parakit.php` (tag `parakit-config`). It will not overwrite
    an existing file unless you pass `--force`, so re-running install is safe.
 2. Publishes the migrations (tag `parakit-migrations`).
-3. Runs `migrate`, creating three tables:
+3. Runs `migrate`, creating four tables:
    - `payment_transactions` — one row per charge, with its current status.
    - `payment_webhook_events` — received webhooks, with the unique
      `(gateway, event_id)` index that makes delivery idempotent.
    - `payment_logs` — redacted request/response records.
+   - `payment_refunds` — idempotent refund attempts and their provider results.
 
 Receipt Blade templates are **not** published by install. Publish them only if
 you want to customise the designs:
@@ -44,17 +45,6 @@ only to override the bundled strings:
 ```bash
 php artisan vendor:publish --tag=parakit-lang
 ```
-
-::: tip Not yet on Packagist
-Until Packagist registration completes, add the VCS repository to your app's
-`composer.json` before running `composer require`:
-
-```json
-"repositories": [
-  { "type": "vcs", "url": "https://github.com/ShahramMebashar/parakit" }
-]
-```
-:::
 
 ## Credentials
 
