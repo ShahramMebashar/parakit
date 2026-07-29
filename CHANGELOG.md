@@ -18,6 +18,7 @@ Pre-1.0 API cleanup (breaking) plus backward-compatible additions.
 - `PaymentBuilder` setter params renamed (`$c`→`$currency`, `$d`→`$description`, `$k`→`$key`, `$m`→`$metadata`, `$u`→`$url`, `$p`→`$phone`). Positional calls unaffected.
 - `payment_refunds.refund_id` → `gateway_refund_id`.
 - Commands renamed to `parakit:<group>:<verb>`: `webhook:simulate`→`webhooks:simulate`, `sweep-pending`→`transactions:sweep-pending`, `test-charge`→`transactions:test-charge`, `receipt:preview`→`receipts:preview`.
+- Laravel 11 support was removed because the framework line is outside upstream security support. Parakit v1 supports Laravel 12 and 13.
 
 ### Fixed
 - Transient charge failures now remain `Pending` when the provider outcome is unknown. FIB create retries are disabled because its API has no merchant idempotency key; retry-capable gateways continue to use stable provider-side request identifiers.
