@@ -25,7 +25,7 @@ export default defineConfig({
       { text: 'Gateways', link: '/gateways/fib', activeMatch: '^/gateways/' },
       { text: 'Reference', link: '/reference/commands', activeMatch: '^/reference/' },
       {
-        text: 'v0.x',
+        text: 'v1.0',
         items: [
           { text: 'Changelog', link: 'https://github.com/ShahramMebashar/parakit/blob/main/CHANGELOG.md' },
           { text: 'Security policy', link: 'https://github.com/ShahramMebashar/parakit/blob/main/SECURITY.md' },
