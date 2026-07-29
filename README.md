@@ -318,7 +318,7 @@ If you reconfigure gateways manually mid-request, you can still call `app('parak
 
 ## Security
 
-See [SECURITY.md](SECURITY.md). TL;DR: webhook signatures are mandatory, comparisons are constant-time, TLS verification is always on, secrets are redacted before they touch the DB.
+See [SECURITY.md](SECURITY.md). Shipped gateways either verify the provider's callback signature or re-fetch authoritative state server-to-server. TLS verification is enabled, and package-owned payloads are redacted before persistence by default.
 
 Report vulnerabilities privately via **GitHub Security Advisories** on this repository (*Security* tab → *Report a vulnerability*).
 

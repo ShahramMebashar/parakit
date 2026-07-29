@@ -6,6 +6,7 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 
 ### Fixed
 - Updated the v1 documentation for Packagist installation, migration tables, site navigation, and FastPay order-id derivation.
+- Replaced the pre-v1 security policy with accurate support, webhook trust, redaction, and deployment boundaries.
 
 ## [1.0.0] — 2026-07-29
 
