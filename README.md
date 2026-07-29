@@ -326,7 +326,7 @@ Report vulnerabilities privately via **GitHub Security Advisories** on this repo
 
 ## Versioning
 
-Semantic versioning. v0.1 is alpha — public API may still shift before v1.0. Subsequent releases will lock the API and follow `^11.0 || ^12.0` for Laravel.
+Parakit follows semantic versioning. Starting with v1.0, public API compatibility is preserved within each major release. Laravel support follows the constraints declared in `composer.json`.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
