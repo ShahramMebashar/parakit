@@ -141,3 +141,39 @@ it('fails when the init response lacks transactionId or redirectUrl', function (
         reference: 'ord_5', amount: 5000, currency: Currency::IQD, description: 'd',
     ));
 })->throws(\Froshly\Parakit\Exceptions\GatewayUnavailableException::class);
+
+it('rejects non-IQD charges before requesting an OAuth token', function () {
+    Http::fake();
+
+    expect(fn () => Payment::driver('zaincash')->charge(new PaymentRequest(
+        reference: 'ord_usd', amount: 5000, currency: Currency::USD, description: 'USD order',
+    )))->toThrow(InvalidArgumentException::class);
+
+    Http::assertNothingSent();
+});
+
+it('reconciles a duplicate externalReferenceId when ZainCash returns its transactionId', function () {
+    Http::fake([
+        '*/oauth2/token' => Http::response(['access_token' => 'tok_1', 'expires_in' => 600]),
+        '*/transaction/init' => Http::response([
+            'code' => 'EXTERNAL_REFERENCE_ALREADY_EXISTS',
+            'message' => 'Duplicate external reference',
+            'transactionDetails' => ['transactionId' => 'zc_existing'],
+        ], 400),
+        '*/transaction/inquiry/zc_existing' => Http::response([
+            'status' => 'PENDING',
+            'transactionDetails' => [
+                'transactionId' => 'zc_existing',
+                'orderId' => 'ord_duplicate',
+                'amount' => ['currency' => 'IQD', 'value' => 5000],
+            ],
+            'redirectUrl' => 'https://pg-api-uat.zaincash.iq/pay/zc_existing',
+        ], 200),
+    ]);
+
+    $response = Payment::driver('zaincash')->charge(new PaymentRequest(
+        reference: 'ord_duplicate', amount: 5000, currency: Currency::IQD, description: 'Order',
+    ));
+
+    expect($response->gatewayTransactionId)->toBe('zc_existing');
+});

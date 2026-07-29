@@ -101,15 +101,16 @@ abstract class AbstractGateway implements PaymentGateway
                     event(new GatewayTimeout($this->gatewayName, $e->endpoint, $e->durationMs));
                 }
                 $this->breaker->recordFailure();
-                if ($attempt >= $maxAttempts) {
-                    $this->markFailed($tx);
+                if (! $this->retryChargeOnTransientFailure() || $attempt >= $maxAttempts) {
+                    // A timeout or 5xx can happen after the provider accepted the
+                    // request. Keep the write-ahead row Pending so an unknown
+                    // remote outcome is never represented as a terminal failure.
                     throw $e;
                 }
                 $expBackoffMs = $baseDelay * (2 ** ($attempt - 1));
                 $jitterMs = random_int(0, max(1, $baseDelay));
                 usleep(($expBackoffMs + $jitterMs) * 1000);
             } catch (\Throwable $e) {
-                $this->breaker->recordFailure();
                 $this->markFailed($tx);
                 throw $e;
             }
@@ -174,6 +175,15 @@ abstract class AbstractGateway implements PaymentGateway
     abstract protected function performCharge(PaymentRequest $request): PaymentResponse;
 
     abstract public function handleWebhook(Request $request): WebhookPayload;
+
+    /**
+     * Disable for providers whose create endpoint has no merchant-supplied
+     * idempotency identifier and therefore cannot safely collapse retries.
+     */
+    protected function retryChargeOnTransientFailure(): bool
+    {
+        return true;
+    }
 
     public function name(): string
     {

@@ -73,10 +73,10 @@ final class FastPayClient
         // so the retry loop never re-sends a request that will fail
         // identically. The `code` is carried so callers can tell 404 apart.
         $code = $json['code'] ?? null;
-        if ($code !== 200) {
+        if (! is_numeric($code) || (int) $code !== 200) {
             throw new FastPayApiException(
                 "FastPay {$uri} rejected: " . $this->firstMessage($json),
-                is_int($code) ? $code : 0,
+                is_numeric($code) ? (int) $code : 0,
             );
         }
 

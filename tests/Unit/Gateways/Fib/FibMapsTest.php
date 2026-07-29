@@ -11,7 +11,14 @@ it('maps known FIB statuses to PaymentStatus', function () {
         ->and(FibStatusMap::toStatus('PAID'))->toBe(PaymentStatus::Paid)
         ->and(FibStatusMap::toStatus('DECLINED'))->toBe(PaymentStatus::Failed)
         ->and(FibStatusMap::toStatus('EXPIRED'))->toBe(PaymentStatus::Expired)
-        ->and(FibStatusMap::toStatus('REFUND_REQUESTED'))->toBe(PaymentStatus::Refunded);
+        ->and(FibStatusMap::toStatus('REFUND_REQUESTED'))->toBe(PaymentStatus::Paid)
+        ->and(FibStatusMap::toStatus('REFUNDED'))->toBe(PaymentStatus::Refunded);
+});
+
+it('uses decliningReason to distinguish expiration and cancellation', function () {
+    expect(FibStatusMap::toStatus('DECLINED', 'PAYMENT_EXPIRATION'))->toBe(PaymentStatus::Expired)
+        ->and(FibStatusMap::toStatus('DECLINED', 'PAYMENT_CANCELLATION'))->toBe(PaymentStatus::Cancelled)
+        ->and(FibStatusMap::toStatus('DECLINED', 'SERVER_FAILURE'))->toBe(PaymentStatus::Failed);
 });
 
 it('falls back to Pending for unknown statuses', function () {

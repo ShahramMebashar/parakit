@@ -101,7 +101,7 @@ it('posts to the NassWallet /callback route with a nested data envelope', functi
 it('posts an order_id body to the FastPay webhook route', function () {
     config()->set('parakit.gateways.fastpay', [
         'driver' => 'fastpay',
-        'base_url' => 'https://staging-pgw.fast-pay.iq',
+        'base_url' => 'https://staging-apigw-merchant.fast-pay.iq',
         'store_id' => 'STORE-1', 'store_password' => 'secret-1',
     ]);
     Http::fake(['*' => Http::response('ok', 200)]);

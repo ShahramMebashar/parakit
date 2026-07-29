@@ -31,37 +31,56 @@ final class ZainCashClient
      */
     public function init(array $payload): array
     {
-        $res = $this->send('POST', '/api/v2/payment-gateway/transaction/init', $payload);
-        if (!$res->successful()) {
-            throw new GatewayUnavailableException("ZainCash init failed: HTTP {$res->status()}");
-        }
-        $json = $res->json();
-        return is_array($json) ? $json : [];
+        return $this->request('POST', '/api/v2/payment-gateway/transaction/init', $payload);
     }
 
     /** @return array<string, mixed> */
     public function inquiry(string $transactionId): array
     {
-        $res = $this->send('GET', '/api/v2/payment-gateway/transaction/inquiry/' . rawurlencode($transactionId));
-        if (!$res->successful()) {
-            throw new GatewayUnavailableException("ZainCash inquiry failed: HTTP {$res->status()}");
-        }
-        $json = $res->json();
-        return is_array($json) ? $json : [];
+        return $this->request(
+            'GET',
+            '/api/v2/payment-gateway/transaction/inquiry/' . rawurlencode($transactionId),
+        );
     }
 
     /** @return array<string, mixed> */
     public function reverse(string $transactionId, string $reason): array
     {
-        $res = $this->send('POST', '/api/v2/payment-gateway/transaction/reverse', [
+        return $this->request('POST', '/api/v2/payment-gateway/transaction/reverse', [
             'transactionId' => $transactionId,
             'reason' => $reason,
         ]);
-        if (!$res->successful()) {
-            throw new GatewayUnavailableException("ZainCash reverse failed: HTTP {$res->status()}");
+    }
+
+    /** @param array<string, mixed>|null $payload @return array<string, mixed> */
+    private function request(string $verb, string $uri, ?array $payload = null): array
+    {
+        $response = $this->send($verb, $uri, $payload);
+
+        if ($response->status() === 401) {
+            $this->tokens->forget();
+            $response = $this->send($verb, $uri, $payload);
         }
-        $json = $res->json();
-        return is_array($json) ? $json : [];
+
+        $status = $response->status();
+        if ($status >= 500) {
+            throw new GatewayUnavailableException("ZainCash {$uri} failed: HTTP {$status}");
+        }
+
+        $json = $response->json();
+        $json = is_array($json) ? $json : [];
+        if ($status >= 400) {
+            $code = (string) ($json['code'] ?? $json['errorCode'] ?? data_get($json, 'error.code', ''));
+            $message = (string) ($json['message'] ?? data_get($json, 'error.message', "HTTP {$status}"));
+            throw new ZainCashApiException(
+                "ZainCash {$uri} rejected: {$message}",
+                $status,
+                $code,
+                $json,
+            );
+        }
+
+        return $json;
     }
 
     /**

@@ -3,8 +3,10 @@ declare(strict_types=1);
 
 namespace Froshly\Parakit\Gateways\Nass;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Froshly\Parakit\Exceptions\GatewayTimeoutException;
 use Froshly\Parakit\Exceptions\GatewayUnavailableException;
 use Froshly\Parakit\Exceptions\PaymentException;
 
@@ -43,13 +45,24 @@ final class NassTokenCache
 
     private function login(): string
     {
-        $response = Http::acceptJson()
-            ->asJson()
-            ->timeout((int) config('parakit.reliability.timeout_seconds', 15))
-            ->post($this->baseUrl . '/auth/merchant/login', [
-                'username' => $this->username,
-                'password' => $this->password,
-            ]);
+        $uri = '/auth/merchant/login';
+        $start = hrtime(true);
+        try {
+            $response = Http::acceptJson()
+                ->asJson()
+                ->timeout((int) config('parakit.reliability.timeout_seconds', 15))
+                ->post($this->baseUrl . $uri, [
+                    'username' => $this->username,
+                    'password' => $this->password,
+                ]);
+        } catch (ConnectionException $e) {
+            throw new GatewayTimeoutException(
+                $uri,
+                (int) ((hrtime(true) - $start) / 1_000_000),
+                "NassPay login timed out: {$e->getMessage()}",
+                $e,
+            );
+        }
 
         // 5xx is transient — let the caller's retry layer handle it.
         if ($response->status() >= 500) {
@@ -72,11 +85,7 @@ final class NassTokenCache
             throw new PaymentException('NassPay login returned no access_token');
         }
 
-        // Expire the cached token shortly before NassPay would, mirroring
-        // FibTokenCache: this avoids a race where a cached-but-just-expired
-        // token is used. 30s minimum keeps a burst-protection window even if
-        // a very short TTL is configured.
-        $ttl = max(30, $this->ttl - self::SAFETY_MARGIN);
+        $ttl = max(1, $this->ttl - self::SAFETY_MARGIN);
         Cache::put($this->cacheKey, $token, $ttl);
         return $token;
     }

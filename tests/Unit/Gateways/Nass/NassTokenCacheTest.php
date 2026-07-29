@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\ConnectionException;
 use Froshly\Parakit\Gateways\Nass\NassTokenCache;
 
 beforeEach(fn () => Cache::flush());
@@ -67,3 +68,11 @@ it('throws GatewayUnavailable on a 5xx from the login endpoint', function () {
     $cache = new NassTokenCache('https://uat-gateway.nass.iq:9746', 'user', 'pass', 3000);
     $cache->token();
 })->throws(\Froshly\Parakit\Exceptions\GatewayUnavailableException::class);
+
+it('wraps a login connection failure as GatewayTimeoutException', function () {
+    Http::fake([
+        '*/auth/merchant/login' => fn () => throw new ConnectionException('timed out'),
+    ]);
+
+    (new NassTokenCache('https://uat-gateway.nass.iq:9746', 'user', 'pass'))->token();
+})->throws(\Froshly\Parakit\Exceptions\GatewayTimeoutException::class);

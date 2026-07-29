@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\ConnectionException;
 use Froshly\Parakit\Gateways\NassWallet\NassWalletTokenCache;
 
 beforeEach(fn () => Cache::flush());
@@ -85,3 +86,19 @@ it('throws PaymentException when login returns a non-zero responseCode', functio
     ], 200)]);
     nwTokenCache()->token();
 })->throws(\Froshly\Parakit\Exceptions\PaymentException::class);
+
+it('wraps a login connection failure as GatewayTimeoutException', function () {
+    Http::fake([
+        '*/login' => fn () => throw new ConnectionException('timed out'),
+    ]);
+
+    nwTokenCache()->token();
+})->throws(\Froshly\Parakit\Exceptions\GatewayTimeoutException::class);
+
+it('accepts a numeric-string zero responseCode from login', function () {
+    $response = nwLoginResponse();
+    $response['responseCode'] = '0';
+    Http::fake(['*/login' => Http::response($response, 200)]);
+
+    expect(nwTokenCache()->token())->toBe('tok_nw');
+});

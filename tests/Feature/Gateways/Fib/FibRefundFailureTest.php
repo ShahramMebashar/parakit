@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Froshly\Parakit\Facades\Payment;
 use Froshly\Parakit\DTOs\RefundRequest;
-use Froshly\Parakit\Exceptions\GatewayUnavailableException;
 
 beforeEach(function () {
     Cache::flush();
@@ -17,11 +16,34 @@ beforeEach(function () {
     ]);
 });
 
-it('throws when FIB refund returns 200 but no refundId', function () {
+it('accepts an empty successful refund response without inventing a refund id', function () {
     Http::fake([
         '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 600]),
-        '*/protected/v1/payments/*/refund' => Http::response(['refundId' => null], 200),
+        '*/protected/v1/payments/*/status' => Http::response([
+            'status' => 'PAID',
+            'amount' => ['amount' => '5000', 'currency' => 'IQD'],
+        ], 200),
+        '*/protected/v1/payments/*/refund' => Http::response(null, 204),
     ]);
 
-    Payment::driver('fib')->refund(new RefundRequest('pid_1', 5000));
-})->throws(GatewayUnavailableException::class);
+    $response = Payment::driver('fib')->refund(new RefundRequest('pid_1', 5000));
+
+    expect($response->success)->toBeTrue()
+        ->and($response->refundId)->toBeNull()
+        ->and($response->refundedAmount)->toBe(5000);
+});
+
+it('rejects a partial refund before calling the full-refund endpoint', function () {
+    Http::fake([
+        '*/protocol/openid-connect/token' => Http::response(['access_token' => 'tok', 'expires_in' => 600]),
+        '*/protected/v1/payments/*/status' => Http::response([
+            'status' => 'PAID',
+            'amount' => ['amount' => '5000', 'currency' => 'IQD'],
+        ], 200),
+        '*/protected/v1/payments/*/refund' => Http::response(null, 204),
+    ]);
+
+    expect(fn () => Payment::driver('fib')->refund(new RefundRequest('pid_1', 1000)))
+        ->toThrow(InvalidArgumentException::class);
+    Http::assertNotSent(fn ($req) => str_ends_with($req->url(), '/refund'));
+});

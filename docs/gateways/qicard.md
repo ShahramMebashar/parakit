@@ -147,12 +147,12 @@ if ($gateway instanceof SupportsRefund) {
 }
 ```
 
-When QiCard answers `status: "SUCCESS"`, the refund is final and the `RefundResponse` carries the QiCard `refundId`. A `status: "FAILED"` produces a failed `RefundResponse` with the QiCard `details.resultCode` and `resultDescription` preserved on `PaymentError`. A `status: "PROCESSING"` indicates an in-flight refund; surface it as a failure and re-poll, or treat it as success-pending depending on your business logic.
+When QiCard answers `status: "SUCCESS"`, the refund is final and the `RefundResponse` carries the QiCard `refundId`. A `status: "FAILED"` produces a failed `RefundResponse` with the QiCard `details.resultCode` and `resultDescription` preserved on `PaymentError`. A `status: "PROCESSING"` is not reported as success: parakit throws `GatewayUnavailableException` and leaves a keyed refund claim pending, preventing a second refund while the outcome is unresolved.
 
 ## Gotchas
 
-- **Amounts in REST bodies use 2 decimal places** (`"5000.00"`), but the **webhook signature canonical string uses 3** (`"5000.000"`). Parakit handles the format split internally — don't reach into either.
-- **`requestId` ≤ 36 characters.** Parakit derives a deterministic 36-char request ID from the parakit idempotency key so a retried charge sends the same ID twice (avoiding a duplicate payment on QiCard's side).
+- **REST amounts are JSON numbers.** The create and refund schemas require numeric values. The **webhook signature canonical string** still uses 3 decimal places (`"5000.000"`); parakit handles that signature-only formatting internally.
+- **`requestId` ≤ 36 characters.** Parakit derives a deterministic UUIDv5 from the idempotency key. If QiCard reports an existing order/payment, parakit reconciles it through `/payment/status/by/request/{requestId}`.
 - **`additionalInfo` is capped at 10 string-typed properties.** Anything passed via `PaymentRequest::metadata` is cast to string and truncated to the first 10 keys.
 - **No `confirmedAmount` for pre-3DS states.** Until QiCard reports `SUCCESS`, the status response carries only the original `amount`.
 - **The sandbox is shared.** Don't rely on the sample card number being available exclusively — flaky tests in CI may be sandbox congestion, not your code.

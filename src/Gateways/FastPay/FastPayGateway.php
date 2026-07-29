@@ -18,7 +18,6 @@ use Froshly\Parakit\Enums\Currency;
 use Froshly\Parakit\Enums\PaymentStatus;
 use Froshly\Parakit\Exceptions\GatewayUnavailableException;
 use Froshly\Parakit\Exceptions\InvalidWebhookSignatureException;
-use Froshly\Parakit\Exceptions\PaymentException;
 use Froshly\Parakit\Gateways\AbstractGateway;
 use Froshly\Parakit\Support\IdempotencyKey;
 use Froshly\Parakit\Support\Money;
@@ -114,7 +113,7 @@ final class FastPayGateway extends AbstractGateway implements SupportsStatusChec
             $validated = $this->client->validate($this->credentials() + [
                 'order_id' => $request->transactionId,
             ]);
-        } catch (PaymentException $e) {
+        } catch (FastPayApiException $e) {
             return $this->failedRefund($e->getMessage());
         }
 
@@ -135,7 +134,7 @@ final class FastPayGateway extends AbstractGateway implements SupportsStatusChec
                 'refund_secret_key' => (string) ($this->config['refund_secret_key'] ?? ''),
                 'msisdn'            => $msisdn,
             ]);
-        } catch (PaymentException $e) {
+        } catch (FastPayApiException $e) {
             return $this->failedRefund($e->getMessage());
         }
 

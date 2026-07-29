@@ -15,7 +15,7 @@ Every key below lives under `gateways.nass` in `config/parakit.php`.
 | `base_url` | `NASS_BASE_URL` | `https://uat-gateway.nass.iq:9746` | No | Nass API host. Note the `:9746` port — it is part of the URL and must stay. Switch to the production host Nass gives you when you go live. |
 | `username` | `NASS_USERNAME` | — | Yes | Merchant login username. Issued by Nass when your account is set up. |
 | `password` | `NASS_PASSWORD` | — | Yes | Merchant login password. Issued by Nass. Used to fetch a bearer token. |
-| `token_ttl` | `NASS_TOKEN_TTL` | `3000` | No | Seconds the fetched access token is cached. The cache expires 60s early, with a 30s floor. |
+| `token_ttl` | `NASS_TOKEN_TTL` | `3000` | No | Seconds the fetched access token is cached. The cache expires 60s early, with a 1s minimum. |
 | `transaction_type` | `NASS_TRANSACTION_TYPE` | `1` | No | Nass transaction type sent on every charge. Leave at `1` unless Nass tells you otherwise. |
 | `callback_url` | `NASS_CALLBACK_URL` | — | No | Server-to-server notification URL. Used as the default `notifyUrl` when a charge does not pass one. |
 | `return_url` | `NASS_RETURN_URL` | — | No | Browser return URL after checkout. Used as the default `backRef` when a charge does not pass one. |
@@ -88,7 +88,8 @@ Nass callbacks carry **no signature**, so the callback body is never trusted on 
 
 - **Port in the base URL.** `base_url` includes `:9746`. Keep the port when you set a production host.
 - **Currency mapping.** Nass expects an ISO 4217 *numeric* currency code, not a letter code. `NassCurrencyMap` translates the `Currency` enum: `IQD` → `368`, `USD` → `840`. Status responses are mapped back the same way; an unknown numeric code falls back to `IQD`.
-- **Amount units.** The charge sends the amount in *major* units as a string (`Money::format`). You still pass minor units to `amount()` — for `IQD` the minor-unit factor is 1, so dinars in equal dinars out.
-- **Token TTL.** The login token is cached for `token_ttl` seconds minus a 60s safety margin, with a 30s floor. On an HTTP `401` the client drops the token, re-logs in, and retries the call once.
+- **Amount units.** The charge sends a JSON number in *major* units, as required by Nass's live OpenAPI schema. You still pass minor units to `amount()` — for `IQD` the minor-unit factor is 1, so dinars in equal dinars out.
+- **Cardholder email.** When `customerEmail()` is supplied, parakit sends it as `cardHolderEmail`. Nass's live schema lists this field as required while describing it as optional; confirm whether your merchant profile requires it.
+- **Token TTL.** The login token is cached for `token_ttl` seconds minus a 60s safety margin, with a 1s minimum. On an HTTP `401` the client drops the token, re-logs in, and retries the call once.
 - **Status codes.** `responseCode` `00` is paid and `-25` is cancelled. Codes `-33`, `-39`, `-40`, `-47` mean "still processing" and map to `Pending`. Other negative codes are `Failed`. An unrecognised code logs `parakit.nass.unknown_status` and is treated as `Pending` rather than guessed.
 - **Idempotency.** The `orderId` is derived from the stable idempotency key (sha256 → first 60 bits as a numeric string), so a retried charge re-sends the same `orderId` and never double-creates a Nass transaction. Free-text caller keys (`order:123`) are folded through `IdempotencyKey::forGateway` first.

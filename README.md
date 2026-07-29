@@ -66,7 +66,7 @@ NASSWALLET_PASSWORD=your-nasswallet-password
 NASSWALLET_TRANSACTION_PIN=your-transaction-pin
 NASSWALLET_CALLBACK_URL=https://yourapp.com/payments/webhooks/nasswallet
 
-FASTPAY_BASE_URL=https://staging-pgw.fast-pay.iq
+FASTPAY_BASE_URL=https://staging-apigw-merchant.fast-pay.iq
 FASTPAY_STORE_ID=your-store-id
 FASTPAY_STORE_PASSWORD=your-store-password
 FASTPAY_REFUND_SECRET_KEY=your-refund-secret-key

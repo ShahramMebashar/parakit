@@ -102,3 +102,15 @@ it('throws a non-retryable PaymentException when responseCode is non-zero', func
 
     nwClient()->initTransaction(['orderId' => '263626']);
 })->throws(\Froshly\Parakit\Exceptions\PaymentException::class, 'Invalid order');
+
+it('accepts a numeric-string zero responseCode', function () {
+    $response = nwFixture('init_success.json');
+    $response['responseCode'] = '0';
+    Http::fake([
+        '*/login' => Http::response(nwLoginFake(), 200),
+        '*/initTransaction' => Http::response($response, 200),
+    ]);
+
+    expect(nwClient()->initTransaction(['orderId' => '263626'])['data']['transactionId'])
+        ->toBe('txn_399875107092750');
+});

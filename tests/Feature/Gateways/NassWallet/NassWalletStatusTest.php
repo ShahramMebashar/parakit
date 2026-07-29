@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Froshly\Parakit\Enums\PaymentStatus;
 use Froshly\Parakit\Facades\Payment;
+use Froshly\Parakit\Enums\Currency;
+use Froshly\Parakit\Models\PaymentTransaction;
 
 beforeEach(function () {
     Cache::flush();
@@ -16,6 +18,15 @@ beforeEach(function () {
         'basic_token' => 'BASIC_TOKEN',
         'username'    => '7500077974',
         'password'    => 'Nass@2020',
+    ]);
+    PaymentTransaction::create([
+        'gateway' => 'nasswallet',
+        'reference' => 'INV-STATUS',
+        'gateway_transaction_id' => 'txn_399875107092750',
+        'status' => PaymentStatus::Pending,
+        'amount' => 5000,
+        'currency' => Currency::IQD,
+        'correlation_id' => 'status-test',
     ]);
 });
 
@@ -38,7 +49,8 @@ it('reads status from the flat checkTransaction response shape', function () {
 
     $r = Payment::driver('nasswallet')->status('txn_399875107092750');
 
-    expect($r->status)->toBe(PaymentStatus::Paid);
+    expect($r->status)->toBe(PaymentStatus::Paid)
+        ->and($r->amount)->toBe(5000);
 });
 
 it('reads status from the rich TransactionHistoryList response shape', function () {
@@ -59,5 +71,6 @@ it('reads status from the rich TransactionHistoryList response shape', function 
 
     $r = Payment::driver('nasswallet')->status('txn_399875107092750');
 
-    expect($r->status)->toBe(PaymentStatus::Paid);
+    expect($r->status)->toBe(PaymentStatus::Paid)
+        ->and($r->amount)->toBe(5000);
 });

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Froshly\Parakit\Gateways\Fib;
 
 use DateTimeImmutable;
+use InvalidArgumentException;
 use Illuminate\Http\Request;
 use Froshly\Parakit\Contracts\SupportsCancel;
 use Froshly\Parakit\Contracts\SupportsRefund;
@@ -41,6 +42,12 @@ final class FibGateway extends AbstractGateway implements SupportsCancel, Suppor
 
     protected function performCharge(PaymentRequest $request): PaymentResponse
     {
+        if ($request->currency !== Currency::IQD) {
+            throw new InvalidArgumentException(
+                'FIB settles IQD only; got ' . $request->currency->value
+            );
+        }
+
         // FIB amount is a decimal string in MAJOR units.
         $params = [
             'amount' => Money::format($request->amount, $request->currency),
@@ -71,7 +78,10 @@ final class FibGateway extends AbstractGateway implements SupportsCancel, Suppor
         $raw = $this->client->createCharge($params);
 
         $status = isset($raw['status'])
-            ? FibStatusMap::toStatus((string) $raw['status'])
+            ? FibStatusMap::toStatus(
+                (string) $raw['status'],
+                isset($raw['decliningReason']) ? (string) $raw['decliningReason'] : null,
+            )
             : PaymentStatus::Pending;
 
         return new PaymentResponse(
@@ -84,7 +94,10 @@ final class FibGateway extends AbstractGateway implements SupportsCancel, Suppor
             currency: $request->currency,
             correlationId: $this->correlationId(),
             qrCode: $raw['qrCode'] ?? null,
-            deepLink: $raw['personalAppLink'] ?? null,
+            deepLink: $raw['personalAppLink']
+                ?? $raw['businessAppLink']
+                ?? $raw['corporateAppLink']
+                ?? null,
             readableCode: $raw['readableCode'] ?? null,
             expiresAt: isset($raw['validUntil']) ? new DateTimeImmutable((string) $raw['validUntil']) : null,
             raw: $raw,
@@ -124,17 +137,25 @@ final class FibGateway extends AbstractGateway implements SupportsCancel, Suppor
 
     private function performRefund(RefundRequest $request): RefundResponse
     {
+        $statusBody = $this->client->fetchStatus($request->transactionId);
+        [, , $originalAmount] = $this->parseStatusBody($statusBody);
+        if ($originalAmount <= 0) {
+            throw new GatewayUnavailableException('FIB status returned no refundable amount');
+        }
+        if ($request->amount !== $originalAmount) {
+            throw new InvalidArgumentException(
+                'FIB supports full refunds only; refund amount must equal the original charge amount'
+            );
+        }
+
         $raw = $this->client->refund($request->transactionId);
 
         $refundId = $raw['refundId'] ?? null;
-        if (!is_string($refundId) || $refundId === '') {
-            throw new GatewayUnavailableException('FIB refund returned 200 without a refundId');
-        }
 
         return new RefundResponse(
             success: true,
-            refundId: $refundId,
-            refundedAmount: $request->amount,
+            refundId: is_string($refundId) && $refundId !== '' ? $refundId : null,
+            refundedAmount: $originalAmount,
             raw: $raw,
         );
     }
@@ -178,7 +199,10 @@ final class FibGateway extends AbstractGateway implements SupportsCancel, Suppor
      */
     private function parseStatusBody(array $raw): array
     {
-        $status = FibStatusMap::toStatus((string) ($raw['status'] ?? ''));
+        $status = FibStatusMap::toStatus(
+            (string) ($raw['status'] ?? ''),
+            isset($raw['decliningReason']) ? (string) $raw['decliningReason'] : null,
+        );
         $amountInfo = (array) ($raw['amount'] ?? []);
         $currency = Currency::tryFrom((string) ($amountInfo['currency'] ?? 'IQD')) ?? Currency::IQD;
         $rawAmount = (string) ($amountInfo['amount'] ?? '0');
@@ -187,5 +211,10 @@ final class FibGateway extends AbstractGateway implements SupportsCancel, Suppor
             : 0;
 
         return [$status, $currency, $amount];
+    }
+
+    protected function retryChargeOnTransientFailure(): bool
+    {
+        return false;
     }
 }

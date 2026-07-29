@@ -6,7 +6,9 @@ use Illuminate\Support\Facades\Http;
 use Froshly\Parakit\DTOs\RefundRequest;
 use Froshly\Parakit\Enums\PaymentErrorCode;
 use Froshly\Parakit\Facades\Payment;
+use Froshly\Parakit\Models\PaymentRefund;
 use Froshly\Parakit\Support\IdempotencyKey;
+use Ramsey\Uuid\Uuid;
 
 beforeEach(function () {
     Cache::flush();
@@ -39,7 +41,7 @@ it('refunds a payment and returns the refundId', function () {
         ->and($r->refundedAmount)->toBe(5000);
 });
 
-it('sends a 2-decimal amount and the optional message field', function () {
+it('sends a numeric amount and the optional message field', function () {
     Http::fake([
         '*/api/v1/payment/*/refund' => Http::response(
             json_decode(file_get_contents(__DIR__ . '/../../../Fixtures/QiCard/refund_success.json'), true),
@@ -56,7 +58,7 @@ it('sends a 2-decimal amount and the optional message field', function () {
             return false;
         }
         $body = $req->data();
-        return $body['amount'] === '7500.00'
+        return $body['amount'] === 7500
             && ($body['message'] ?? null) === 'change-of-mind'
             && is_string($body['requestId']) && $body['requestId'] !== '';
     });
@@ -122,14 +124,37 @@ it('derives requestId from the idempotencyKey so QiCard sees the same id on retr
         transactionId: 'pid_1', amount: 5000, idempotencyKey: 'refund-order-2',
     ));
 
-    $expected = substr(
-        IdempotencyKey::forGatewayOperation('qicard', 'refund', 'refund-order-2'),
-        0,
-        36,
-    );
+    $expected = Uuid::uuid5(
+        Uuid::NAMESPACE_URL,
+        'parakit:qicard:refund:' . IdempotencyKey::forGatewayOperation(
+            'qicard',
+            'refund',
+            'refund-order-2',
+        ),
+    )->toString();
     Http::assertSent(fn ($req) =>
         ! str_contains($req->url(), '/refund') || (string) $req['requestId'] === $expected,
     );
+});
+
+it('keeps a PROCESSING refund pending instead of reporting it as completed', function () {
+    Http::fake([
+        '*/api/v1/payment/*/refund' => Http::response([
+            'refundId' => 'refund-processing',
+            'status' => 'PROCESSING',
+            'amount' => 5000,
+        ], 200),
+    ]);
+
+    $request = new RefundRequest(
+        transactionId: 'pid_1',
+        amount: 5000,
+        idempotencyKey: 'refund-processing',
+    );
+
+    expect(fn () => Payment::driver('qicard')->refund($request))
+        ->toThrow(\Froshly\Parakit\Exceptions\GatewayUnavailableException::class);
+    expect(PaymentRefund::first()->status)->toBe('pending');
 });
 
 it('maps QiCard error code 20 (REFUND_ERROR) to a failed RefundResponse', function () {

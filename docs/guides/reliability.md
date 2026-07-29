@@ -19,8 +19,9 @@ and `parakit.sweeper`.
 ],
 ```
 
-All of this lives in `AbstractGateway`, which every shipped driver extends — so
-it applies to every gateway uniformly.
+The shared mechanics live in `AbstractGateway`, which every shipped driver
+extends. A driver can disable charge retries when its provider has no safe
+idempotency or reconciliation mechanism.
 
 ## Idempotency
 
@@ -44,19 +45,24 @@ Pass a stable `idempotencyKey()` — the order id is ideal. See
 
 ## Retries
 
-When a charge attempt throws `GatewayUnavailableException`, parakit retries it.
-Up to `retry.max_attempts` attempts run (3 by default), with exponential
-backoff plus random jitter — `base_delay_ms` (200ms) doubles each attempt.
+When a retry-capable charge throws `GatewayUnavailableException`, parakit runs
+up to `retry.max_attempts` attempts (3 by default), with exponential backoff
+plus random jitter — `base_delay_ms` (200ms) doubles each attempt.
 
 Two rules keep retries safe:
 
 - Only `GatewayUnavailableException` is retried. Any other exception fails the
   transaction and is rethrown immediately — no retry.
-- Retries reuse the same idempotency key, so a retried charge cannot
-  double-charge. The write-ahead row and response cache absorb the repeat.
+- Shipped retry-capable drivers reuse a stable provider-side request/order
+  identifier. Local cache and database idempotency protect repeated
+  `charge()` calls, but provider-side identity is what makes an in-flight HTTP
+  retry safe.
 
-When every attempt is exhausted, the transaction is marked `Failed` and the
-exception is rethrown to the caller.
+FIB create does not accept a merchant idempotency identifier, so its driver
+does not retry an uncertain create. When a transient create failure is
+exhausted, the write-ahead transaction remains `Pending`: a timeout or 5xx may
+have happened after the provider accepted the request, so parakit never labels
+that unknown remote outcome as a terminal failure. The exception is rethrown.
 
 ## Circuit breaker
 
@@ -80,8 +86,8 @@ to page on a gateway outage. See [the events table](/guides/handling-webhooks#ev
 ## Timeouts
 
 Every gateway HTTP call is bounded by `parakit.reliability.timeout_seconds` (15
-by default). A call that overruns is treated as a failure — it feeds the retry
-loop and the circuit breaker like any other `GatewayUnavailableException`.
+by default). A call that overruns feeds the circuit breaker and, for drivers
+with safe provider-side idempotency, the retry loop.
 
 The `GatewayTimeout` event carries the `gateway`, the `endpoint`, and the
 `durationMs` for observability.

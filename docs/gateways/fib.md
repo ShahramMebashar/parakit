@@ -15,7 +15,7 @@ Configure FIB under `parakit.gateways.fib` in `config/parakit.php`. Every key re
 | `base_url` | `FIB_BASE_URL` | `https://fib.stage.fib.iq` | Yes | FIB API host. Defaults to the staging host — set the production host for live payments. |
 | `client_id` | `FIB_CLIENT_ID` | — | Yes | OAuth2 client ID for the `client_credentials` grant. Issued by FIB. |
 | `client_secret` | `FIB_CLIENT_SECRET` | — | Yes | OAuth2 client secret. Issued by FIB. Keep it out of version control. |
-| `currency` | `FIB_CURRENCY` | `IQD` | No | Default currency label for the gateway. The actual charge currency comes from the `amount()` call. |
+| `currency` | `FIB_CURRENCY` | `IQD` | No | Compatibility setting. FIB settles IQD only, and parakit rejects any non-IQD charge. |
 | `refundable_for` | `FIB_REFUNDABLE_FOR` | `P7D` | No | ISO-8601 duration the payment stays refundable (e.g. `P7D` = 7 days, `PT12H` = 12 hours). Sent to FIB at charge time. |
 | `expires_in` | `FIB_EXPIRES_IN` | — | No | ISO-8601 duration the QR/code stays payable. Omitted when unset — FIB applies its own default. |
 | `category` | `FIB_CATEGORY` | — | No | FIB transaction category (`ERP`, `POS`, `ECOMMERCE`, …). Omitted when unset — FIB records it as `UNKNOWN`. |
@@ -116,7 +116,7 @@ if ($gateway instanceof SupportsRefund) {
 }
 ```
 
-FIB's refund endpoint is a full refund of the payment — it takes no amount. Parakit's `RefundResponse` reports `refundedAmount` as the amount you passed in the request, so pass the original charge amount. If FIB returns `200` without a `refundId`, parakit treats it as a failure and throws `GatewayUnavailableException`.
+FIB's refund endpoint is a full refund of the payment — it takes no amount. Before refunding, parakit fetches the authoritative payment amount and rejects any `RefundRequest` whose amount differs. FIB does not guarantee a refund identifier, so a successful empty `2xx` response produces `success: true`, the verified original amount, and a nullable `refundId`.
 
 A payment is refundable only inside the `refundable_for` window — an ISO-8601 duration sent to FIB at charge time, default `P7D` (7 days). After the window closes FIB rejects the refund. Override it per charge with `metadata(['refundable_for' => 'PT48H'])`, or globally via `FIB_REFUNDABLE_FOR`.
 
@@ -126,7 +126,8 @@ See [Refunds](/guides/refunds) for the shared refund workflow.
 
 - **Staging vs production host.** `FIB_BASE_URL` defaults to the staging host `https://fib.stage.fib.iq`. Set the production host explicitly before going live.
 - **Access tokens are short-lived.** FIB OAuth2 tokens last about 60 seconds. Parakit caches them per host + client ID and refreshes automatically — but a misconfigured cache store will mean a token call on every request.
-- **Currency.** `Currency::IQD` has a minor-unit factor of 1, so `amount(25000, Currency::IQD)` is 25,000 dinars. For `USD` the factor is 100, so pass cents.
+- **Currency.** FIB settles IQD only. `amount(25000, Currency::IQD)` is 25,000 dinars; any other currency throws `InvalidArgumentException` before FIB is contacted.
+- **Create retries.** FIB does not accept a merchant idempotency identifier on create. Parakit therefore does not retry an uncertain FIB create. The local transaction remains `Pending` for manual reconciliation instead of risking a second payable QR code.
 - **No redirect URL.** FIB never returns a hosted checkout URL. `redirectUrl` is always `null`; build your UI around `qrCode`, `readableCode` and `deepLink`.
 - **`returnUrl()` is optional.** If you pass `returnUrl()`, it becomes FIB's `redirectUri` — where the FIB app sends the user after they finish or cancel. Leave it unset and FIB stays in-app.
 - **Unknown status strings.** If FIB introduces a status parakit does not recognise, it logs `parakit.fib.unknown_status` and falls back to `Pending`. Watch your logs for that warning after FIB API changes.

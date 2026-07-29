@@ -10,7 +10,7 @@ use Froshly\Parakit\Exceptions\PaymentException;
 
 function fastPayClient(): FastPayClient
 {
-    return new FastPayClient(baseUrl: 'https://staging-pgw.fast-pay.iq');
+    return new FastPayClient(baseUrl: 'https://staging-apigw-merchant.fast-pay.iq');
 }
 
 function fastPayFixture(string $name): array
@@ -100,3 +100,11 @@ it('throws a non-retryable PaymentException when the body code is 404', function
 
     fastPayClient()->validate(['order_id' => 'ORD123456']);
 })->throws(PaymentException::class, 'No transaction has been found');
+
+it('accepts a numeric-string success code', function () {
+    Http::fake([
+        '*/payment/validate' => Http::response(['code' => '200', 'data' => []], 200),
+    ]);
+
+    expect(fastPayClient()->validate(['order_id' => 'ORD123456'])['code'])->toBe('200');
+});

@@ -13,14 +13,22 @@ final class FibStatusMap
         'PAID'               => PaymentStatus::Paid,
         'DECLINED'           => PaymentStatus::Failed,
         'EXPIRED'            => PaymentStatus::Expired,
-        'REFUND_REQUESTED'   => PaymentStatus::Refunded,
+        // The money has not been returned until FIB reaches REFUNDED.
+        'REFUND_REQUESTED'   => PaymentStatus::Paid,
         'REFUNDED'           => PaymentStatus::Refunded,
         'CANCELLED'          => PaymentStatus::Cancelled,
     ];
 
-    public static function toStatus(string $raw): PaymentStatus
+    public static function toStatus(string $raw, ?string $decliningReason = null): PaymentStatus
     {
         $upper = strtoupper($raw);
+        if ($upper === 'DECLINED') {
+            return match (strtoupper((string) $decliningReason)) {
+                'PAYMENT_EXPIRATION' => PaymentStatus::Expired,
+                'PAYMENT_CANCELLATION' => PaymentStatus::Cancelled,
+                default => PaymentStatus::Failed,
+            };
+        }
         if (isset(self::MAP[$upper])) {
             return self::MAP[$upper];
         }

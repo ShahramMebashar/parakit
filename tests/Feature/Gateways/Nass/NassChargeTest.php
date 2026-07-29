@@ -54,14 +54,16 @@ it('sends a numeric orderId, major-unit amount and ISO numeric currency', functi
 
     Payment::driver('nass')->charge(new PaymentRequest(
         reference: 'INV-2026-ABC', amount: 5000, currency: Currency::IQD, description: 'Order #1',
+        customerEmail: 'payer@example.test',
     ));
 
     Http::assertSent(fn ($req) =>
         str_contains($req->url(), '/transaction')
         && ctype_digit((string) $req['orderId'])
-        && $req['amount'] === '5000'
+        && $req['amount'] === 5000
         && $req['currency'] === '368'
-        && $req['transactionType'] === 1
+        && $req['transactionType'] === '1'
+        && $req['cardHolderEmail'] === 'payer@example.test'
         && $req['backRef'] === 'https://app.test/return'
         && $req['notifyUrl'] === 'https://app.test/payments/webhooks/nass');
 });

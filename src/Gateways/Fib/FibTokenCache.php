@@ -53,14 +53,16 @@ final class FibTokenCache
         }
 
         $token = (string) $response->json('access_token');
+        if ($token === '') {
+            throw new FibApiException(
+                'FIB token endpoint returned no access_token',
+                $status,
+            );
+        }
         // FIB documents a 60s access-token lifetime; default to that if the
         // response omits expires_in rather than over-caching a stale token.
         $expiresIn = (int) $response->json('expires_in', 60);
-        // Guard the TTL: never let it drop to 0 or below (which means "delete
-        // now" or "forever" depending on the cache store). 30s minimum keeps
-        // a brief burst-protection window even if FIB hands us very short
-        // tokens; otherwise we'd hammer the token endpoint.
-        $ttl = max(30, $expiresIn - self::SAFETY_MARGIN);
+        $ttl = max(1, $expiresIn - self::SAFETY_MARGIN);
         Cache::put($this->cacheKey, $token, $ttl);
         return $token;
     }

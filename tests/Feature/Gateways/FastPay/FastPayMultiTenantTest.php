@@ -26,11 +26,11 @@ beforeEach(function () {
  */
 it('keeps two FastPay stores isolated — each sends its own credentials', function () {
     config()->set('parakit.gateways.fastpay_a', [
-        'driver' => 'fastpay', 'base_url' => 'https://staging-pgw.fast-pay.iq',
+        'driver' => 'fastpay', 'base_url' => 'https://staging-apigw-merchant.fast-pay.iq',
         'store_id' => 'STORE-A', 'store_password' => 'pw-a',
     ]);
     config()->set('parakit.gateways.fastpay_b', [
-        'driver' => 'fastpay', 'base_url' => 'https://staging-pgw.fast-pay.iq',
+        'driver' => 'fastpay', 'base_url' => 'https://staging-apigw-merchant.fast-pay.iq',
         'store_id' => 'STORE-B', 'store_password' => 'pw-b',
     ]);
 

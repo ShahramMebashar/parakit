@@ -133,7 +133,7 @@ return [
         ],
         'fastpay' => [
             'driver'            => 'fastpay',
-            'base_url'          => env('FASTPAY_BASE_URL', 'https://staging-pgw.fast-pay.iq'),
+            'base_url'          => env('FASTPAY_BASE_URL', 'https://staging-apigw-merchant.fast-pay.iq'),
             'store_id'          => env('FASTPAY_STORE_ID'),
             'store_password'    => env('FASTPAY_STORE_PASSWORD'),
             'refund_secret_key' => env('FASTPAY_REFUND_SECRET_KEY'),
