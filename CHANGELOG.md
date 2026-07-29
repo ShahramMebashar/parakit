@@ -4,6 +4,9 @@ All notable changes to `froshly/parakit` are documented in this file. The format
 
 ## [Unreleased]
 
+### Fixed
+- `parakit:doctor` now checks only the default gateway unless `--gateway` or `--all` is supplied, so unused gateway templates no longer produce false failures.
+
 ## [1.0.1] — 2026-07-29
 
 Documentation corrections and additions for the v1 release.

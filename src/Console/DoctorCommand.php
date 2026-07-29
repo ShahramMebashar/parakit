@@ -10,8 +10,10 @@ use Froshly\Parakit\Gateways\Fib\FibTokenCache;
 
 class DoctorCommand extends Command
 {
-    protected $signature = 'parakit:doctor {--gateway=}';
-    protected $description = 'Verify parakit configuration and gateway connectivity';
+    protected $signature = 'parakit:doctor
+        {--gateway= : Check a specific gateway instead of the default}
+        {--all : Check every declared gateway}';
+    protected $description = 'Verify Parakit configuration and available connectivity checks';
 
     public function handle(): int
     {
@@ -20,13 +22,8 @@ class DoctorCommand extends Command
             $this->warn("parakit.webhooks.on_amount_mismatch is '{$mismatch}', not a valid policy (log|reject); falling back to 'log'.");
         }
 
-        $only = (string) $this->option('gateway');
-        $gateways = $only !== ''
-            ? [$only => config("parakit.gateways.{$only}")]
-            : (array) config('parakit.gateways', []);
-
-        if ($gateways === []) {
-            $this->error('No gateways configured under parakit.gateways.');
+        $gateways = $this->gatewaysToCheck();
+        if ($gateways === null) {
             return self::FAILURE;
         }
 
@@ -86,6 +83,42 @@ class DoctorCommand extends Command
         }
 
         return $ok ? self::SUCCESS : self::FAILURE;
+    }
+
+    /** @return array<string, mixed>|null */
+    private function gatewaysToCheck(): ?array
+    {
+        $gateway = trim((string) $this->option('gateway'));
+        $all = (bool) $this->option('all');
+
+        if ($gateway !== '' && $all) {
+            $this->error('Use either --gateway or --all, not both.');
+            return null;
+        }
+
+        $configured = config('parakit.gateways', []);
+        if (!is_array($configured) || $configured === []) {
+            $this->error('No gateways configured under parakit.gateways.');
+            return null;
+        }
+
+        if ($all) {
+            return $configured;
+        }
+
+        $selected = $gateway !== '' ? $gateway : config('parakit.default');
+        if (!is_string($selected) || trim($selected) === '') {
+            $this->error('No default gateway configured at parakit.default.');
+            return null;
+        }
+
+        $selected = trim($selected);
+        if (!array_key_exists($selected, $configured)) {
+            $this->error("Gateway '{$selected}' is not configured under parakit.gateways.");
+            return null;
+        }
+
+        return [$selected => $configured[$selected]];
     }
 
     /** @return string[]|null */

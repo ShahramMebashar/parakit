@@ -173,7 +173,7 @@ Other events: `PaymentInitiated`, `PaymentFailed`, `PaymentCancelled`, `PaymentR
 | Command | Purpose |
 |---|---|
 | `parakit:install` | Publishes config + migrations, runs `migrate`. |
-| `parakit:doctor [--gateway=fib]` | Verifies config + connectivity. Non-zero exit on failure. |
+| `parakit:doctor [--gateway=fib] [--all]` | Verifies the default, selected, or all gateway configs plus available connectivity checks. |
 | `parakit:transactions:test-charge fib --amount=1000` | Sandbox roundtrip. Proves end-to-end works. |
 | `parakit:transactions:sweep-pending` | Polls status for pending transactions to recover lost webhooks. Auto-scheduled every 5 min. |
 | `parakit:webhooks:simulate fib --transaction-id=pid_1 --status=paid` | POSTs a correctly-formed test webhook to your local app. |
